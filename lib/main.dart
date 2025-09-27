@@ -1,0 +1,106 @@
+// lib/main.dart
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; // ✨ استيراد ضروري
+
+// استيراد الشاشات والمزودات
+import 'package:osman_moskee/account/login_page.dart';
+import 'package:osman_moskee/account/SplashScreen.dart';
+import 'package:osman_moskee/account/reset_password_page.dart';
+import 'package:osman_moskee/account/signupscreen.dart';
+
+import 'package:osman_moskee/providers/AttendanceRecordsProvider.dart';
+import 'package:osman_moskee/providers/AttendanceSessionsProvider.dart';
+import 'package:osman_moskee/providers/MemorizationSessionsProvider.dart';
+import 'package:osman_moskee/providers/QuranTestsProvider.dart';
+import 'package:osman_moskee/providers/UsersProvider.dart';
+import 'package:osman_moskee/screens/Dashboard.dart';
+import 'package:osman_moskee/screens/monthly_attendance_screen.dart';
+import 'package:osman_moskee/themes/theme_provider.dart';
+import 'package:osman_moskee/themes/app_themes.dart';
+import 'package:provider/provider.dart';
+
+import 'package:osman_moskee/teacher_dash_bord.dart';
+import 'package:osman_moskee/screens/teacher_view_sreen.dart';
+import 'package:osman_moskee/screens/StudentviewScreen.dart';
+import 'package:osman_moskee/screens/tests.dart';
+import 'package:osman_moskee/screens/HalaqatScreen.dart';
+import 'package:osman_moskee/screens/AttendanceTakeScreen.dart';
+import 'package:osman_moskee/screens/SessionsListScreen.dart';
+
+
+// إعدادات Firebase
+import 'firebase/firebase_options.dart';
+
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UsersProvider()),
+        ChangeNotifierProvider(create: (_) => AttendanceSessionsProvider()),
+        ChangeNotifierProvider(create: (_) => AttendanceRecordsProvider()),
+        ChangeNotifierProvider(create: (_) => MemorizationSessionsProvider()),
+        ChangeNotifierProvider(create: (_) => QuranTestsProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Osman Moskee',
+            
+            // ================== ✨ إعدادات التوطين (Localization) ✨ ==================
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en', ''),
+              Locale('ar', ''), // دعم اللغة العربية
+            ],
+            locale: const Locale('ar', ''), // تعيين اللغة الافتراضية إلى العربية
+            // ========================================================================
+
+            theme:lightTheme,
+            darkTheme: darkTheme,
+            themeMode: themeProvider.themeMode,
+            home: const SplashScreen(),
+            routes: {
+              '/login': (_) => const LoginPage(),
+              '/SplashScreen': (_) => const SplashScreen(),
+              '/Dashboard': (_) => const Dashboard(),
+              '/teacher_dashboard': (_) => const TeacherDashboard(),
+              '/addStudent': (_) => const StudentsScreen(),
+              '/tests_view': (_) => const QuranTestsScreen(),
+              '/teacher_view': (_) => const TeachersScreen(),
+              '/AttendanceTakeScreen': (_) => const AttendanceTakeScreen(),
+              '/HalaqatScreen': (_) => const HalaqatScreen(),
+              '/SignUpScreen': (_) => const SignUpScreen(),
+              '/ResetPasswordPage': (_) => const ResetPasswordPage(),
+              '/SessionsListScreen': (_) => const SessionsManagerScreen(),
+              '/MonthlyAttendanceScreen': (_) => const MonthlyAttendanceScreen(
+                studentId: 'stu-001',
+ studentName:"عمار حمندوش",
+ displayMonth: 9, // سبتمبر
+ displayYear: 2025,
+              ),
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+

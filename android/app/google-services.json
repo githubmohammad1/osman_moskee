@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "496140435082",
+    "project_id": "osman-moskee",
+    "storage_bucket": "osman-moskee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:496140435082:android:aa35b9a478a470986ff773",
+        "android_client_info": {
+          "package_name": "com.example.osman_moskee"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6zkQUA6CVGmG6YlvaVyBTks6VXyKvFXA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

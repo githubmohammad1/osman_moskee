@@ -1,0 +1,47 @@
+# ملفات النظام
+.DS_Store
+Thumbs.db
+
+# إعدادات المحرر
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+.atom/
+.history
+
+# ملفات البناء والتجميع
+/build/
+.dart_tool/
+.pub/
+.pub-cache/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.flutter-plugins-dependencies
+/coverage/
+.build/
+.buildlog/
+migrate_working_dir/
+
+# Android Studio
+*.iml
+*.ipr
+*.iws
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# ملفات مؤقتة أو غير مهمة
+*.class
+*.log
+*.pyc
+*.swp
+*.tmp
+
+# أخرى
+.svn/
+.swiftpm/
+
+# Flutter symbolication/obfuscation
+app.*.symbols
+app.*.map.json
