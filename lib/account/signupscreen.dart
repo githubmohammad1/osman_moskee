@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:osman_moskee/firebase/auth_service.dart';
@@ -21,11 +21,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final authService = AuthService();
-  
+
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool isLoading = false;
-  
+
   DateTime? _selectedBirthDate; // ✨ متغير لتاريخ الميلاد
 
   @override
@@ -81,7 +81,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     try {
       // تحويل التاريخ إلى صيغة Firebase
-      final birthDateString = DateFormat('yyyy-MM-dd').format(_selectedBirthDate!);
+      final birthDateString = DateFormat(
+        'yyyy-MM-dd',
+      ).format(_selectedBirthDate!);
 
       // 4. استخدام دالة register لإنشاء المستخدم وبياناته
       final user = await authService.register(
@@ -93,34 +95,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
         role: 'student', // قيمة افتراضية
         gender: 'male', // قيمة افتراضية
         birthDate: birthDateString, // ✨ استخدام تاريخ الميلاد المدخل
-        joinDate: DateFormat('yyyy-MM-dd').format(DateTime.now()), // تاريخ الانضمام اليوم
+        joinDate: DateFormat(
+          'yyyy-MM-dd',
+        ).format(DateTime.now()), // تاريخ الانضمام اليوم
       );
 
       if (user != null) {
-        // 5. جلب بيانات المستخدم بعد التسجيل
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-
-        if (doc.exists) {
-          final role = doc['role'];
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم إنشاء الحساب بنجاح')),
-          );
-
-          // 6. التوجيه بناءً على الدور
-          if (role == 'teacher' || role == 'admin') {
-            Navigator.pushNamedAndRemoveUntil(context, "/teacher_dashboard", (route) => false);
-          } else if (role == 'parent' || role == 'student') {
-            Navigator.pushNamedAndRemoveUntil(context, "/Dashboard", (route) => false);
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('خطأ: لا توجد بيانات للمستخدم')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'تم إنشاء الحساب بنجاح. يرجى تفعيل بريدك الإلكتروني قبل تسجيل الدخول.',
+            ),
+          ),
+        );
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        return;
       }
     } catch (e) {
       ScaffoldMessenger.of(
@@ -149,7 +138,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Form( // ✨ إضافة Form Widget
+            child: Form(
+              // ✨ إضافة Form Widget
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -190,40 +180,78 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   // ================= حقول الاسم والهاتف (تم تنظيمها في البداية) =================
                   Row(
                     children: [
-                      Expanded(child: _buildTextField(_firstNameController, "الاسم الأول", "أدخل اسمك الأول...", false)),
+                      Expanded(
+                        child: _buildTextField(
+                          _firstNameController,
+                          "الاسم الأول",
+                          "أدخل اسمك الأول...",
+                          false,
+                        ),
+                      ),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildTextField(_lastNameController, "الاسم الأخير", "أدخل اسمك الأخير...", false)),
+                      Expanded(
+                        child: _buildTextField(
+                          _lastNameController,
+                          "الاسم الأخير",
+                          "أدخل اسمك الأخير...",
+                          false,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
-                  _buildTextField(_phoneController, "رقم الهاتف", "أدخل رقم هاتفك...", false, keyboardType: TextInputType.phone),
+
+                  _buildTextField(
+                    _phoneController,
+                    "رقم الهاتف",
+                    "أدخل رقم هاتفك...",
+                    false,
+                    keyboardType: TextInputType.phone,
+                  ),
                   const SizedBox(height: 16),
-                  
+
                   // ✨ حقل تاريخ الميلاد
                   _buildDateButton(context),
                   const SizedBox(height: 16),
-                  
+
                   // حقل البريد الإلكتروني
-                  _buildTextField(_emailController, "البريد الإلكتروني", "أدخل بريدك الإلكتروني هنا...", false, keyboardType: TextInputType.emailAddress),
+                  _buildTextField(
+                    _emailController,
+                    "البريد الإلكتروني",
+                    "أدخل بريدك الإلكتروني هنا...",
+                    false,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
                   const SizedBox(height: 16),
 
                   // حقل كلمة المرور
-                  _buildPasswordTextField(_passwordController, "كلمة المرور", "أدخل كلمة المرور هنا...", _obscurePassword, (newValue) {
-                    setState(() {
-                      _obscurePassword = newValue;
-                    });
-                  }),
+                  _buildPasswordTextField(
+                    _passwordController,
+                    "كلمة المرور",
+                    "أدخل كلمة المرور هنا...",
+                    _obscurePassword,
+                    (newValue) {
+                      setState(() {
+                        _obscurePassword = newValue;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 16),
 
                   // حقل تأكيد كلمة المرور
-                  _buildPasswordTextField(_confirmPasswordController, "تأكيد كلمة المرور", "أعد إدخال كلمة المرور...", _obscureConfirmPassword, (newValue) {
-                    setState(() {
-                      _obscureConfirmPassword = newValue;
-                    });
-                  }),
+                  _buildPasswordTextField(
+                    _confirmPasswordController,
+                    "تأكيد كلمة المرور",
+                    "أعد إدخال كلمة المرور...",
+                    _obscureConfirmPassword,
+                    (newValue) {
+                      setState(() {
+                        _obscureConfirmPassword = newValue;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 24),
-                  
+
                   // زر إنشاء الحساب
                   SizedBox(
                     width: double.infinity,
@@ -233,15 +261,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         backgroundColor: Colors.green[900],
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       child: isLoading
                           ? const CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             )
                           : const Text(
                               "إنشاء الحساب",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                     ),
                   ),
@@ -267,7 +302,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   // دالة مساعدة لبناء حقول الإدخال
-  Widget _buildTextField(TextEditingController controller, String label, String hint, bool obscureText, {TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    String hint,
+    bool obscureText, {
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
@@ -277,9 +318,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         fillColor: Colors.white,
         labelText: label,
         hintText: hint,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
       // ✨ دالة التحقق من صحة البيانات
       validator: (value) {
@@ -298,7 +337,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   // دالة مساعدة لبناء حقول كلمة المرور
-  Widget _buildPasswordTextField(TextEditingController controller, String label, String hint, bool obscure, Function(bool) toggleObscure) {
+  Widget _buildPasswordTextField(
+    TextEditingController controller,
+    String label,
+    String hint,
+    bool obscure,
+    Function(bool) toggleObscure,
+  ) {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
@@ -307,13 +352,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         fillColor: Colors.white,
         labelText: label,
         hintText: hint,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         suffixIcon: IconButton(
-          icon: Icon(
-            obscure ? Icons.visibility_off : Icons.visibility,
-          ),
+          icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
           onPressed: () {
             toggleObscure(!obscure);
           },
@@ -345,7 +386,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
           _selectedBirthDate == null
               ? 'تاريخ الميلاد'
               : 'تاريخ الميلاد: ${DateFormat('yyyy-MM-dd').format(_selectedBirthDate!)}',
-          style: TextStyle(color: _selectedBirthDate == null ? Colors.black54 : Colors.black, fontWeight: FontWeight.normal),
+          style: TextStyle(
+            color: _selectedBirthDate == null ? Colors.black54 : Colors.black,
+            fontWeight: FontWeight.normal,
+          ),
         ),
         trailing: const Icon(Icons.calendar_today, color: Color(0xFF388E3C)),
         onTap: () => _selectDate(context),

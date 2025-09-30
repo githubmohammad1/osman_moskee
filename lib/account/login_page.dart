@@ -15,10 +15,11 @@ class _LoginPageState extends State<LoginPage> {
   final authService = AuthService();
   bool _obscurePassword = true;
   bool isLoading = false;
+  String? _errorMessage;
 
   void _login() async {
     setState(() => isLoading = true);
-
+    _errorMessage = null;
     try {
       final user = await authService.signIn(
         _emailController.text,
@@ -40,7 +41,6 @@ class _LoginPageState extends State<LoginPage> {
 
           // التوجيه بناءً على الدور
           if (role == 'teacher' || role == 'admin') {
-            
             Navigator.pushNamed(context, "/teacher_dashboard");
           } else if (role == 'parent') {
             Navigator.pushNamed(context, "/Dashboard");
@@ -48,13 +48,15 @@ class _LoginPageState extends State<LoginPage> {
             Navigator.pushNamed(context, "/Dashboard");
           }
         } else {
-          
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('لا توجد بيانات للمستخدم')),
           );
         }
       }
     } catch (e) {
+      setState(() {
+      _errorMessage = e.toString();
+    });
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(e.toString())));
@@ -215,18 +217,36 @@ class _LoginPageState extends State<LoginPage> {
                           )
                         : const Text(
                             "تسجيل الدخول",
-                            style: TextStyle(fontSize: 16),
+                            style: TextStyle(fontSize: 18,),
                           ),
                   ),
                 ),
-                const SizedBox(height: 16),
-
-                // نص تسجيل عبر منصات التواصل
-                const Text(
-                  "أو يمكنك المتابعة عبر حسابات التواصل الاجتماعي",
-                  style: TextStyle(color: Colors.white70),
-                  textAlign: TextAlign.center,
-                ),
+  
+  const SizedBox(height: 16),
+  if (_errorMessage != null && _errorMessage!.contains('تفعيل بريدك الإلكتروني')) ...[
+ ElevatedButton(
+    onPressed: () async {
+      final user = await authService.signIn(
+        _emailController.text,
+        _passwordController.text,
+      );
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إرسال رسالة التحقق إلى بريدك الإلكتروني.'))
+        );
+      }
+    },
+    child: const Text('إعادة إرسال رسالة التحقق'),
+  ),
+  const SizedBox(height: 8),
+  ],
+  // نص تسجيل عبر منصات التواصل
+  const Text(
+    "أو يمكنك المتابعة عبر حسابات التواصل الاجتماعي",
+    style: TextStyle(color: Colors.white70),
+    textAlign: TextAlign.center,
+  ),
                 const SizedBox(height: 8),
 
                 // أزرار التواصل الاجتماعي

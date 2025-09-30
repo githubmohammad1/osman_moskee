@@ -22,6 +22,11 @@ class AuthService {
         email: email.trim(),
         password: password.trim(),
       );
+      // ✨ تحقق من التحقق
+      if (!credential.user!.emailVerified) {
+        await _auth.signOut();
+        throw 'يرجى تفعيل بريدك الإلكتروني أولاً. تم إرسال رسالة تحقق إلى بريدك.';
+      }
       return credential.user;
     } on FirebaseAuthException {
       rethrow;
@@ -46,7 +51,6 @@ class AuthService {
     if (await emailExists(email)) {
       throw 'البريد الإلكتروني مستخدم بالفعل';
     }
-    
 
     try {
       // 1. إنشاء المستخدم في Firebase Authentication
@@ -54,9 +58,9 @@ class AuthService {
         email: email.trim(),
         password: password.trim(),
       );
-if (!credential.user!.emailVerified) {
-  await credential.user!.sendEmailVerification();
-}
+      if (!credential.user!.emailVerified) {
+        await credential.user!.sendEmailVerification();
+      }
       // 2. تخزين البيانات في Firestore باستخدام UID كمعرف للمستند
       await _db.collection('users').doc(credential.user!.uid).set({
         'firstName': firstName.trim(),
