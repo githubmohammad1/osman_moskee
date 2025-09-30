@@ -1,5 +1,3 @@
-// lib/screens/attendance_take_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:osman_moskee/providers/AttendanceRecordsProvider.dart';
 import 'package:osman_moskee/providers/AttendanceSessionsProvider.dart';
@@ -45,6 +43,9 @@ class _AttendanceTakeScreenState extends State<AttendanceTakeScreen> {
 
   bool _isInitialLoading = true;
   String? _initialError;
+
+  // ✨ إضافة متغير حالة التحميل الموضعي للحفظ المجمع (ليس الزر الصغير)
+  bool _isSavingBatch = false;
 
   @override
   void initState() {
@@ -102,6 +103,8 @@ class _AttendanceTakeScreenState extends State<AttendanceTakeScreen> {
     setState(() {});
 
     try {
+      // 💡 ملاحظة: يجب أن يقوم هذا الاستدعاء بـ fetchAll بجلب البيانات دون تغيير حالة isLoading العامة في الـ Provider
+      // إذا كان الـ Provider يقوم بتحديث حالة isLoading العامة، يجب تعديله ليصبح أكثر تحديداً (Localized loading)
       await recordsProvider.fetchAll(
         sessionId: _selectedSessionId!,
         role: 'student',
@@ -149,7 +152,8 @@ class _AttendanceTakeScreenState extends State<AttendanceTakeScreen> {
     String status,
   ) async {
     if (_selectedSessionId == null || !mounted) return;
-
+    
+    // 💡 لا نستخدم هنا أي مؤشر تحميل عام، فقط نعرض رسالة نجاح أو خطأ مباشرة بعد العملية
     try {
       await context.read<AttendanceRecordsProvider>().setRecord(
         sessionId: _selectedSessionId!,
@@ -158,19 +162,108 @@ class _AttendanceTakeScreenState extends State<AttendanceTakeScreen> {
         role: 'student',
         status: status,
       );
-      _updateLocalAttendanceStatus();
-      // إظهار رسالة نجاح مؤقتة
+      
+      // 💡 التحديث المحلي فوري لتقليل الاعتماد على تحديث الـ Provider بالكامل
+      setState(() {
+        _attendanceStatus[studentId] = status;
+      });
+
+      // إظهار رسالة نجاح مؤقتة (تأكيد بصري)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('تم تسجيل حضور ${studentName} بنجاح كـ $status'),
+          content: Text('تم تسجيل حضور ${studentName} بنجاح كـ ${getLocalizedStatus(status)}'),
+          duration: const Duration(milliseconds: 1500),
+          backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('فشل تسجيل الحضور: ${e.toString()}')),
+        SnackBar(
+          content: Text('فشل تسجيل الحضور: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
+  
+  // دالة جديدة لتسجيل جميع الطلاب الغائبين كحاضرين
+  Future<void> _markAllAbsentAsPresent() async {
+    if (_selectedSessionId == null || _isSavingBatch || !mounted) return;
+
+    final absentStudents = context
+        .read<UsersProvider>()
+        .items
+        .where((u) => u['role'] == 'student')
+        .where((u) => (_attendanceStatus[u['id']] ?? 'absent') == 'absent')
+        .toList();
+
+    if (absentStudents.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('جميع الطلاب تم تسجيل حضورهم بالفعل.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSavingBatch = true;
+    });
+
+    final recordsProvider = context.read<AttendanceRecordsProvider>();
+    int successCount = 0;
+    
+    // 💡 استخدام Future.wait لتنفيذ التحديثات بشكل متوازٍ وسريع
+    try {
+      final List<Future> updates = [];
+      for (var s in absentStudents) {
+        updates.add(
+          recordsProvider.setRecord(
+            sessionId: _selectedSessionId!,
+            personId: s['id'],
+            personName: '${s['firstName']} ${s['lastName']}',
+            role: 'student',
+            status: 'present',
+          ).then((_) {
+            // تحديث الحالة المحلية فورًا
+            setState(() {
+              _attendanceStatus[s['id']] = 'present';
+              successCount++;
+            });
+          }).catchError((e) {
+            print('Failed to update attendance for ${s['id']}: $e');
+            // لا نرمي خطأ حتى لا نوقف باقي العمليات
+          })
+        );
+      }
+      
+      // الانتظار حتى تنتهي جميع الـ Futures
+      await Future.wait(updates);
+
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم تسجيل حضور ${successCount} طالب بنجاح.'),
+            backgroundColor: successCount > 0 ? Colors.green : Colors.orange,
+          ),
+        );
+      }
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل عام في تسجيل الحضور المجمع: ${e.toString()}')),
+         
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingBatch = false;
+        });
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -216,21 +309,50 @@ class _AttendanceTakeScreenState extends State<AttendanceTakeScreen> {
                   child: SpinKitDualRing(color: Colors.blue, size: 50.0),
                 )
               : _initialError != null
-              ? Center(
-                  child: Text(
-                    _initialError!,
-                    style: TextStyle(color: Colors.red),
-                  ),
-                )
-              : Column(
-                  children: [
-                    _buildSessionControlPanel(sessions),
-                    const SizedBox(height: 20),
-                    _buildStudentsGrid(students, usersProvider),
-                  ],
-                ),
+                  ? Center(
+                      child: Text(
+                        _initialError!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        _buildSessionControlPanel(sessions),
+                        const SizedBox(height: 20),
+                        _buildStudentsGrid(students, usersProvider),
+                      ],
+                    ),
         ),
       ),
+      // ✨ إضافة زر تسجيل الحضور المجمع في الأسفل
+      bottomNavigationBar: _selectedSessionId != null && students.isNotEmpty
+          ? Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton.icon(
+                onPressed: _isSavingBatch ? null : _markAllAbsentAsPresent,
+                icon: _isSavingBatch
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(FontAwesomeIcons.solidSquareCheck),
+                label: Text(
+                  _isSavingBatch ? 'جاري تسجيل الحضور...' : 'تسجيل الجميع كحاضر',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            )
+          : null,
     );
   }
 
@@ -404,9 +526,12 @@ class _AttendanceTakeScreenState extends State<AttendanceTakeScreen> {
       );
     }
 
+    // 💡 التعديل هنا: نزيل الشرط recordsProvider.isLoading من هذا المكان
+    // ونتحقق فقط من isLoading في UsersProvider لأن تحديثات الطلاب أبطأ.
+    // تحديثات الحضور الفردية أصبحت لا تستخدم حالة تحميل عامة.
     return Consumer<AttendanceRecordsProvider>(
       builder: (context, recordsProvider, child) {
-        if (usersProvider.isLoading || recordsProvider.isLoading) {
+        if (usersProvider.isLoading) {
           return const Expanded(
             child: Center(
               child: SpinKitDualRing(color: Colors.blue, size: 50.0),
@@ -425,8 +550,8 @@ class _AttendanceTakeScreenState extends State<AttendanceTakeScreen> {
                   Text(
                     'لا يوجد طلاب مسجلون',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
+                          color: Colors.grey.shade600,
+                        ),
                   ),
                 ],
               ),
@@ -447,8 +572,10 @@ class _AttendanceTakeScreenState extends State<AttendanceTakeScreen> {
               itemCount: students.length,
               itemBuilder: (context, i) {
                 final s = students[i];
+                // 💡 نستخدم الحالة المحلية _attendanceStatus فقط، فهي تتحدث فوراً
                 final status = _attendanceStatus[s['id']] ?? 'absent';
                 final recitationCount = _recitationCounts[s['id']] ?? 0;
+                
                 return StudentCard(
                   studentId: s['id'],
                   studentName: '${s['firstName']} ${s['lastName']}',
@@ -703,8 +830,8 @@ class _AttendanceTakeScreenState extends State<AttendanceTakeScreen> {
     if (confirm == true) {
       try {
         await context.read<AttendanceSessionsProvider>().deleteSession(
-          sessionId,
-        );
+              sessionId,
+            );
         setState(() {
           // بعد الحذف، حاول اختيار أحدث جلسة متاحة
           final sessions = context.read<AttendanceSessionsProvider>().sessions;
@@ -720,8 +847,8 @@ class _AttendanceTakeScreenState extends State<AttendanceTakeScreen> {
           }
         });
         ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم حذف الجلسة بنجاح.')));
+                context,
+              ).showSnackBar(const SnackBar(content: Text('تم حذف الجلسة بنجاح.')));
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('فشل حذف الجلسة: ${e.toString()}')),

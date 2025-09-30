@@ -40,6 +40,7 @@ class _LoginPageState extends State<LoginPage> {
 
           // التوجيه بناءً على الدور
           if (role == 'teacher' || role == 'admin') {
+            
             Navigator.pushNamed(context, "/teacher_dashboard");
           } else if (role == 'parent') {
             Navigator.pushNamed(context, "/Dashboard");
@@ -47,15 +48,16 @@ class _LoginPageState extends State<LoginPage> {
             Navigator.pushNamed(context, "/Dashboard");
           }
         } else {
+          
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('لا توجد بيانات للمستخدم')),
           );
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       setState(() => isLoading = false);
     }
@@ -89,7 +91,8 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(width: 8),
                     Text(
                       "مسجد القرآن",
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -118,10 +121,13 @@ class _LoginPageState extends State<LoginPage> {
                 // حقل البريد الإلكتروني
                 TextField(
                   controller: _emailController,
-                  autofillHints: const [AutofillHints.username, AutofillHints.email],
+                  autofillHints: const [
+                    AutofillHints.username,
+                    AutofillHints.email,
+                  ],
                   decoration: InputDecoration(
                     filled: true,
-                    
+
                     fillColor: Colors.white,
                     labelText: "البريد الإلكتروني",
                     hintText: "أدخل بريدك الإلكتروني هنا...",
@@ -135,7 +141,10 @@ class _LoginPageState extends State<LoginPage> {
 
                 // حقل كلمة المرور
                 TextField(
-                  autofillHints: const [AutofillHints.username, AutofillHints.email],
+                  autofillHints: const [
+                    AutofillHints.username,
+                    AutofillHints.email,
+                  ],
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
@@ -148,7 +157,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
                       onPressed: () {
                         setState(() {
@@ -198,7 +209,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     child: isLoading
                         ? const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           )
                         : const Text(
                             "تسجيل الدخول",
