@@ -16,13 +16,15 @@ class _LoginPageState extends State<LoginPage> {
   final authService = AuthService();
   bool _obscurePassword = true;
   bool isLoading = false;
- Future<void> _saveUserToken(String uid) async {
+  String? _errorMessage;
+
+  /// حفظ التوكين في Firestore وربطه بالمستخدم
+  Future<void> _saveUserToken(String uid) async {
     try {
       final fcmToken = await FirebaseMessaging.instance.getToken();
       if (fcmToken != null) {
         final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
 
-        // ✨ إضافة التوكين إلى قائمة (Array) بدل الكتابة فوق القديم
         await userDoc.update({
           'tokens': FieldValue.arrayUnion([fcmToken]),
           'lastLogin': FieldValue.serverTimestamp(),
@@ -30,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
 
         print("✅ تم حفظ التوكين للمستخدم $uid : $fcmToken");
 
-        // ✨ الاستماع لتحديث التوكين إذا تغيّر
+        // الاستماع لتحديث التوكين إذا تغيّر
         FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
           await userDoc.update({
             'tokens': FieldValue.arrayUnion([newToken]),
@@ -43,8 +45,11 @@ class _LoginPageState extends State<LoginPage> {
       print("❌ خطأ في حفظ التوكين: $e");
     }
   }
+
+  /// تسجيل الدخول
   void _login() async {
     setState(() => isLoading = true);
+    _errorMessage = null;
 
     try {
       final user = await authService.signIn(
@@ -60,31 +65,33 @@ class _LoginPageState extends State<LoginPage> {
 
         if (doc.exists) {
           final role = doc['role'];
-   await _saveUserToken(user.uid);
+
+          // حفظ التوكين
+          await _saveUserToken(user.uid);
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم تسجيل الدخول بنجاح')),
           );
 
-          // التوجيه بناءً على الدور
+          // التوجيه حسب الدور
           if (role == 'teacher' || role == 'admin') {
-            
             Navigator.pushNamed(context, "/teacher_dashboard");
-          } else if (role == 'parent') {
-            Navigator.pushNamed(context, "/Dashboard");
           } else {
             Navigator.pushNamed(context, "/Dashboard");
           }
         } else {
-          
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('لا توجد بيانات للمستخدم')),
           );
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      setState(() {
+        _errorMessage = e.toString();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     } finally {
       setState(() => isLoading = false);
     }
@@ -118,8 +125,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(width: 8),
                     Text(
                       "مسجد القرآن",
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -145,16 +151,12 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // حقل البريد الإلكتروني
+                // البريد الإلكتروني
                 TextField(
                   controller: _emailController,
-                  autofillHints: const [
-                    AutofillHints.username,
-                    AutofillHints.email,
-                  ],
+                  autofillHints: const [AutofillHints.username, AutofillHints.email],
                   decoration: InputDecoration(
                     filled: true,
-
                     fillColor: Colors.white,
                     labelText: "البريد الإلكتروني",
                     hintText: "أدخل بريدك الإلكتروني هنا...",
@@ -166,12 +168,8 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // حقل كلمة المرور
+                // كلمة المرور
                 TextField(
-                  autofillHints: const [
-                    AutofillHints.username,
-                    AutofillHints.email,
-                  ],
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
@@ -184,9 +182,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
                       ),
                       onPressed: () {
                         setState(() {
@@ -236,17 +232,38 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     child: isLoading
                         ? const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           )
                         : const Text(
                             "تسجيل الدخول",
-                            style: TextStyle(fontSize: 16),
+                            style: TextStyle(fontSize: 18),
                           ),
                   ),
                 ),
+
                 const SizedBox(height: 16),
+
+                // زر إعادة إرسال التحقق إذا كان البريد غير مفعل
+                if (_errorMessage != null &&
+                    _errorMessage!.contains('تفعيل بريدك الإلكتروني')) ...[
+                  ElevatedButton(
+                    onPressed: () async {
+                      final user = await authService.signIn(
+                        _emailController.text,
+                        _passwordController.text,
+                      );
+                      if (user != null && !user.emailVerified) {
+                        await user.sendEmailVerification();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('تم إرسال رسالة التحقق إلى بريدك الإلكتروني.')),
+                        );
+                      }
+                    },
+                    child: const Text('إعادة إرسال رسالة التحقق'),
+                  ),
+                  const SizedBox(height: 8),
+                ],
 
                 // نص تسجيل عبر منصات التواصل
                 const Text(
@@ -270,7 +287,6 @@ class _LoginPageState extends State<LoginPage> {
                         // منطق تسجيل الدخول عبر Google
                       },
                     ),
-                    const SizedBox(width: 16),
                   ],
                 ),
               ],
