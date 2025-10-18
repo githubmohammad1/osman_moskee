@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:osman_moskee/firebase/auth_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -97,6 +98,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
 
       if (user != null) {
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+           await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+        'fcmToken': fcmToken,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+           FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+          'fcmToken': newToken,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      });
+      
         // 5. جلب بيانات المستخدم بعد التسجيل
         final doc = await FirebaseFirestore.instance
             .collection('users')

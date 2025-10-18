@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:osman_moskee/firebase/auth_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,7 +16,33 @@ class _LoginPageState extends State<LoginPage> {
   final authService = AuthService();
   bool _obscurePassword = true;
   bool isLoading = false;
+ Future<void> _saveUserToken(String uid) async {
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
 
+        // ✨ إضافة التوكين إلى قائمة (Array) بدل الكتابة فوق القديم
+        await userDoc.update({
+          'tokens': FieldValue.arrayUnion([fcmToken]),
+          'lastLogin': FieldValue.serverTimestamp(),
+        });
+
+        print("✅ تم حفظ التوكين للمستخدم $uid : $fcmToken");
+
+        // ✨ الاستماع لتحديث التوكين إذا تغيّر
+        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+          await userDoc.update({
+            'tokens': FieldValue.arrayUnion([newToken]),
+            'lastLogin': FieldValue.serverTimestamp(),
+          });
+          print("🔄 تم تحديث التوكين: $newToken");
+        });
+      }
+    } catch (e) {
+      print("❌ خطأ في حفظ التوكين: $e");
+    }
+  }
   void _login() async {
     setState(() => isLoading = true);
 
@@ -33,7 +60,7 @@ class _LoginPageState extends State<LoginPage> {
 
         if (doc.exists) {
           final role = doc['role'];
-
+   await _saveUserToken(user.uid);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم تسجيل الدخول بنجاح')),
           );

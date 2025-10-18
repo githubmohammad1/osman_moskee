@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"osman-moskee","configurations":{"android":"1:496140435082:android:aa35b9a478a470986ff773"}}},"android":{"default":{"projectId":"osman-moskee","appId":"1:496140435082:android:aa35b9a478a470986ff773","fileOutput":"android/app/google-services.json"}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "osman-moskee",
+          "configurations": {
+            "android": "1:496140435082:android:aa35b9a478a470986ff773"
+          }
+        }
+      },
+      "android": {
+        "default": {
+          "projectId": "osman-moskee",
+          "appId": "1:496140435082:android:aa35b9a478a470986ff773",
+          "fileOutput": "android/app/google-services.json"
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ]
+}
