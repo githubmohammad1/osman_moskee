@@ -11,14 +11,12 @@ class AttendanceRecordsProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   
-  // ✨ إضافة: متغير جديد لحالة الحفظ/التحديث (الذي كان سبب الخطأ)
   bool _isSettingRecord = false; 
 
   List<Map<String, dynamic>> get records => _records;
   bool get isLoading => _isLoading;
   String? get error => _error;
   
-  // ✨ إضافة: الـ Getter لتفعيل وتعطيل أزرار الحضور في الواجهة
   bool get isSettingRecord => _isSettingRecord; 
 
   Future<void> fetchAll({String? sessionId, String? studentId, String? role}) async {

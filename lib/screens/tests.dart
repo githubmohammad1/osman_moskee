@@ -16,8 +16,18 @@ class QuranTestsScreen extends StatefulWidget {
 
 class _QuranTestsScreenState extends State<QuranTestsScreen> {
   String? token;
+
+  
+  Future<void> subscribeToTopic() async {
+
+
+  await FirebaseMessaging.instance.subscribeToTopic("news");
+  print("✅ تم الاشتراك في موضوع news");
+}
+
+
   gettoken() async {
-    final notificationSettings = await FirebaseMessaging.instance
+    await FirebaseMessaging.instance
         .requestPermission(provisional: true);
     final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
     if (apnsToken != null) {
@@ -29,7 +39,7 @@ class _QuranTestsScreenState extends State<QuranTestsScreen> {
           "BIhp2PyHxJwFQHZ0udXEUykddQwq3Y2mEU_HS2udzi6v3trtjav8Ivw06PTdFQY5ujuEziPsvA99EipYx1X6vUQ",
     );
     token = fcmToken;
-    print("ddddddddddddddddddddddddddd");
+  
     print(fcmToken);
   }
 
@@ -182,6 +192,7 @@ class TestCard extends StatelessWidget {
                           await context.read<QuranTestsProvider>().deleteTest(
                             test['id'],
                             test['studentId'],
+                            context
                           );
                         }
                       }
@@ -400,12 +411,14 @@ class _TestDialogState extends State<TestDialog> {
 
               if (widget.test == null) {
                 // ✨ الاستدعاء المُبسط الجديد: نرسل الخريطة الموحدة فقط
-                await context.read<QuranTestsProvider>().addTest(data);
+                await context.read<QuranTestsProvider>().addTest(data, context);
+
               } else {
                 // التعديل يبقى كما هو
                 await context.read<QuranTestsProvider>().updateTest(
                   widget.test!['id'],
                   data,
+                  context
                 );
               }
 

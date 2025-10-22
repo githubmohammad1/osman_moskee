@@ -2,20 +2,24 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; // ✨ استيراد ضروري
+import 'package:google_fonts/google_fonts.dart';
 
 // استيراد الشاشات والمزودات
 import 'package:osman_moskee/account/login_page.dart';
 import 'package:osman_moskee/account/SplashScreen.dart';
 import 'package:osman_moskee/account/reset_password_page.dart';
 import 'package:osman_moskee/account/signupscreen.dart';
+import 'package:osman_moskee/firebase/firebase_options.dart';
 
 import 'package:osman_moskee/providers/AttendanceRecordsProvider.dart';
 import 'package:osman_moskee/providers/AttendanceSessionsProvider.dart';
 import 'package:osman_moskee/providers/MemorizationSessionsProvider.dart';
 import 'package:osman_moskee/providers/QuranTestsProvider.dart';
 import 'package:osman_moskee/providers/UsersProvider.dart';
+import 'package:osman_moskee/screens/AttendanceTableScreen.dart';
 import 'package:osman_moskee/screens/Dashboard.dart';
 import 'package:osman_moskee/screens/monthly_attendance_screen.dart';
+
 import 'package:osman_moskee/themes/theme_provider.dart';
 import 'package:osman_moskee/themes/app_themes.dart';
 import 'package:provider/provider.dart';
@@ -27,20 +31,34 @@ import 'package:osman_moskee/screens/tests.dart';
 import 'package:osman_moskee/screens/HalaqatScreen.dart';
 import 'package:osman_moskee/screens/AttendanceTakeScreen.dart';
 import 'package:osman_moskee/screens/SessionsListScreen.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+void requestNotificationPermission() async {
+  NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
 
+  if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+    print("تم السماح بالإشعارات");
+  } else {
+    print("تم رفض الإذن");
+  }
+}
 
-// إعدادات Firebase
-import 'firebase/firebase_options.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  requestNotificationPermission();
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +92,7 @@ class MyApp extends StatelessWidget {
 
             theme:lightTheme,
             darkTheme: darkTheme,
+           
             themeMode: themeProvider.themeMode,
             home: const SplashScreen(),
             routes: {
@@ -89,6 +108,8 @@ class MyApp extends StatelessWidget {
               '/SignUpScreen': (_) => const SignUpScreen(),
               '/ResetPasswordPage': (_) => const ResetPasswordPage(),
               '/SessionsListScreen': (_) => const SessionsManagerScreen(),
+              
+              '/AttendanceTableScreen': (_) => const AttendanceTableScreen(),
               '/MonthlyAttendanceScreen': (_) => const MonthlyAttendanceScreen(
                 studentId: 'stu-001',
  studentName:"عمار حمندوش",

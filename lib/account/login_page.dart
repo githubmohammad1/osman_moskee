@@ -244,26 +244,26 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 16),
 
                 // زر إعادة إرسال التحقق إذا كان البريد غير مفعل
-                if (_errorMessage != null &&
-                    _errorMessage!.contains('تفعيل بريدك الإلكتروني')) ...[
-                  ElevatedButton(
-                    onPressed: () async {
-                      final user = await authService.signIn(
-                        _emailController.text,
-                        _passwordController.text,
-                      );
-                      if (user != null && !user.emailVerified) {
-                        await user.sendEmailVerification();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('تم إرسال رسالة التحقق إلى بريدك الإلكتروني.')),
-                        );
-                      }
-                    },
-                    child: const Text('إعادة إرسال رسالة التحقق'),
-                  ),
-                  const SizedBox(height: 8),
-                ],
+                // if (_errorMessage != null &&
+                //     _errorMessage!.contains('تفعيل بريدك الإلكتروني')) ...[
+                //   ElevatedButton(
+                //     onPressed: () async {
+                //       final user = await authService.signIn(
+                //         _emailController.text,
+                //         _passwordController.text,
+                //       );
+                //       if (user != null && !user.emailVerified) {
+                //         await user.sendEmailVerification();
+                //         ScaffoldMessenger.of(context).showSnackBar(
+                //           const SnackBar(
+                //               content: Text('تم إرسال رسالة التحقق إلى بريدك الإلكتروني.')),
+                //         );
+                //       }
+                //     },
+                //     child: const Text('إعادة إرسال رسالة التحقق'),
+                //   ),
+                //   const SizedBox(height: 8),
+                // ],
 
                 // نص تسجيل عبر منصات التواصل
                 const Text(

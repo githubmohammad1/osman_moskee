@@ -104,17 +104,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (user != null) {
         final fcmToken = await FirebaseMessaging.instance.getToken();
-           await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-        'fcmToken': fcmToken,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-           FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-          'fcmToken': newToken,
-          'updatedAt': FieldValue.serverTimestamp(),
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({
+              'fcmToken': fcmToken,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .update({
+                'fcmToken': newToken,
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
         });
-      });
-      
+
         // 5. جلب بيانات المستخدم بعد التسجيل
         final doc = await FirebaseFirestore.instance
             .collection('users')
@@ -127,12 +133,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم إنشاء الحساب بنجاح')),
           );
-
+          // عند نجاح التسجيل، اشترك في التوبيك العام
+          await FirebaseMessaging.instance.subscribeToTopic("all");
+          print("✅ تم الاشتراك في التوبيك العام all");
           // 6. التوجيه بناءً على الدور
           if (role == 'teacher' || role == 'admin') {
-            Navigator.pushNamedAndRemoveUntil(context, "/teacher_dashboard", (route) => false);
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              "/teacher_dashboard",
+              (route) => false,
+            );
           } else if (role == 'parent' || role == 'student') {
-            Navigator.pushNamedAndRemoveUntil(context, "/Dashboard", (route) => false);
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              "/Dashboard",
+              (route) => false,
+            );
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(

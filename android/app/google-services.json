@@ -12,7 +12,20 @@
           "package_name": "com.example.osman_moskee"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "496140435082-v04h3t34a8oe0qp4bbpqce9k8ccctri7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.osman_moskee",
+            "certificate_hash": "4c59d51775bab5fbc95597e905d656cccab9401d"
+          }
+        },
+        {
+          "client_id": "496140435082-1sre7qofntfidomp7klj7rb5h7re9kdk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyC6zkQUA6CVGmG6YlvaVyBTks6VXyKvFXA"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "496140435082-1sre7qofntfidomp7klj7rb5h7re9kdk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "496140435082-aq9dhsup8q1c1u4g0ukftbf87msi1t9c.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.osmanMoskee"
+              }
+            }
+          ]
         }
       }
     }

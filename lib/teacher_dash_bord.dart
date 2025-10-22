@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:osman_moskee/app_drawer.dart';
 
-
 class TeacherDashboard extends StatelessWidget {
   const TeacherDashboard({super.key});
 
@@ -47,7 +46,7 @@ class TeacherDashboard extends StatelessWidget {
       },
       {
         'label': 'جدول الحضور',
-        'route': '/AttendanceStatsScreen',
+        'route': '/AttendanceTableScreen',
         'icon': Icons.calendar_month_rounded,
         'color': Colors.pink, // Changed to MaterialColor
       },
@@ -57,7 +56,7 @@ class TeacherDashboard extends StatelessWidget {
         'icon': Icons.library_books_rounded,
         'color': Colors.brown, // Changed to MaterialColor
       },
-        {
+      {
         'label': 'مراجعة ',
         'route': '/MonthlyAttendanceScreen',
         'icon': Icons.library_books_rounded,
@@ -73,7 +72,10 @@ class TeacherDashboard extends StatelessWidget {
       child: Scaffold(
         drawer: const AppDrawer(),
         appBar: AppBar(
-          title: const Text('لوحة تحكم المعلم', style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text(
+            'لوحة تحكم المعلم',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           centerTitle: true,
           elevation: 0,
         ),
@@ -122,16 +124,18 @@ class _DashboardCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     // Now you can safely use shade400 because color is a MaterialColor
-    final cardColor = theme.brightness == Brightness.dark ? color.shade400 : color.shade700;
-    final textColor = theme.brightness == Brightness.dark ? Colors.white70 : Colors.white;
+    final cardColor = theme.brightness == Brightness.dark
+        ? color.shade400
+        : color.shade700;
+    final textColor = theme.brightness == Brightness.dark
+        ? Colors.white70
+        : Colors.white;
 
     return GestureDetector(
       onTap: onTap,
       child: Card(
         elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Container(
           decoration: BoxDecoration(
             color: cardColor,
@@ -145,11 +149,7 @@ class _DashboardCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 40,
-                color: textColor,
-              ),
+              Icon(icon, size: 40, color: textColor),
               const SizedBox(height: 8),
               Text(
                 label,
