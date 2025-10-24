@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; // ✨ استيراد ضروري
-import 'package:google_fonts/google_fonts.dart';
+
 
 // استيراد الشاشات والمزودات
 import 'package:osman_moskee/account/login_page.dart';
@@ -16,21 +16,22 @@ import 'package:osman_moskee/providers/AttendanceSessionsProvider.dart';
 import 'package:osman_moskee/providers/MemorizationSessionsProvider.dart';
 import 'package:osman_moskee/providers/QuranTestsProvider.dart';
 import 'package:osman_moskee/providers/UsersProvider.dart';
-import 'package:osman_moskee/screens/AttendanceTableScreen.dart';
+import 'package:osman_moskee/screens/for_students/StudentPerformanceSummaryScreen.dart';
+import 'package:osman_moskee/screens/for_students/view_tests_for_students.dart';
+import 'package:osman_moskee/screens/for_teacher/AttendanceTableScreen.dart';
 import 'package:osman_moskee/screens/Dashboard.dart';
-import 'package:osman_moskee/screens/monthly_attendance_screen.dart';
 
 import 'package:osman_moskee/themes/theme_provider.dart';
 import 'package:osman_moskee/themes/app_themes.dart';
 import 'package:provider/provider.dart';
 
 import 'package:osman_moskee/teacher_dash_bord.dart';
-import 'package:osman_moskee/screens/teacher_view_sreen.dart';
-import 'package:osman_moskee/screens/StudentviewScreen.dart';
-import 'package:osman_moskee/screens/tests.dart';
-import 'package:osman_moskee/screens/HalaqatScreen.dart';
-import 'package:osman_moskee/screens/AttendanceTakeScreen.dart';
-import 'package:osman_moskee/screens/SessionsListScreen.dart';
+import 'package:osman_moskee/screens/for_teacher/teacher_view_sreen.dart';
+import 'package:osman_moskee/screens/for_teacher/StudentviewScreen.dart';
+import 'package:osman_moskee/screens/for_teacher/tests.dart';
+import 'package:osman_moskee/screens/for_teacher/HalaqatScreen.dart';
+import 'package:osman_moskee/screens/for_teacher/AttendanceTakeScreen.dart';
+import 'package:osman_moskee/screens/for_teacher/SessionsListScreen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 void requestNotificationPermission() async {
   NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
@@ -109,13 +110,11 @@ class MyApp extends StatelessWidget {
               '/ResetPasswordPage': (_) => const ResetPasswordPage(),
               '/SessionsListScreen': (_) => const SessionsManagerScreen(),
               
+               '/QuranTestsScreen_for_stuents': (_) => const QuranTestsScreen_for_stuents(),
               '/AttendanceTableScreen': (_) => const AttendanceTableScreen(),
-              '/MonthlyAttendanceScreen': (_) => const MonthlyAttendanceScreen(
-                studentId: 'stu-001',
- studentName:"عمار حمندوش",
- displayMonth: 9, // سبتمبر
- displayYear: 2025,
-              ),
+
+              '/StudentPerformanceSummaryScreen': (_) => const StudentPerformanceSummaryScreen(),
+             
             },
           );
         },

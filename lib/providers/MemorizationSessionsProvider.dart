@@ -22,7 +22,37 @@ final FirebaseFirestore db = FirebaseFirestore.instance;
   // 4. حالة التحميل العامة (تم الاحتفاظ بها فقط لدوائل التقارير)
   bool _isReportLoading = false;
   bool get isReportLoading => _isReportLoading;
+// في ملف MemorizationSessionsProvider.dart
 
+/// يجلب عدد الصفحات المكتمل حفظها (Hifz) للطالب في الشهر الحالي
+Future<int> getMonthlyHifzCount(String studentId) async {
+  final now = DateTime.now();
+  final startOfMonth = Timestamp.fromDate(DateTime(now.year, now.month, 1));
+  
+  // نفترض أنك تخزن تاريخ آخر تحديث لكل صفحة أو تاريخ إنشاء الجلسة
+  final snapshot = await db
+      .collection('memorization_sessions')
+      .where('studentId', isEqualTo: studentId)
+      // قد تحتاج إلى حقل تاريخ خاص بالتسميع الشهري أو الاعتماد على createdAt
+      // للحصول على جميع الجلسات المحدثة في الشهر الحالي
+      .where('createdAt', isGreaterThanOrEqualTo: startOfMonth) 
+      .get();
+      
+  int monthlyHifzPages = 0;
+  
+  for (var doc in snapshot.docs) {
+    final data = doc.data();
+    final recitedPages = data['recitedPages'] as Map<String, dynamic>? ?? {};
+
+    // تجميع عدد الصفحات التي تحمل حالة "Hifz" أو "تمّ"
+    recitedPages.values.forEach((status) {
+      if (status == 'Hifz' || status == 'تمّ') { 
+        monthlyHifzPages++;
+      }
+    });
+  }
+  return monthlyHifzPages;
+}
   // =================================================================
   // دوال جلب البيانات
   // =================================================================
@@ -45,11 +75,12 @@ final FirebaseFirestore db = FirebaseFirestore.instance;
           .where('studentId', isEqualTo: studentId)
           .where('juzNumber', isEqualTo: juzNumber)
           .orderBy('createdAt', descending: true)
-          .limit(1)
+         
           .get();
 
       final Map<int, String> pages = {};
       if (snapshot.docs.isNotEmpty) {
+
         final data = snapshot.docs.first.data();
         final recitedPages = data['recitedPages'] as Map<String, dynamic>? ?? {};
 
@@ -65,7 +96,7 @@ final FirebaseFirestore db = FirebaseFirestore.instance;
       _studentJuzRecitations.putIfAbsent(studentId, () => {});
       _studentJuzRecitations[studentId]![juzNumber] = pages;
       
-      _juzErrors[juzNumber] = null;
+      _juzErrors[juzNumber] = null;       
     } catch (e) {
       _juzErrors[juzNumber] = "فشل تحميل بيانات التسميع: ${e.toString()}";
       if (kDebugMode) {

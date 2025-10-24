@@ -81,15 +81,15 @@ class _DashboardState extends State<Dashboard> {
   bool _isLoadingUser = true; // مؤشر تحميل حالة المستخدم
 
  final List<Map<String, dynamic>> actions = [
+//  {
+//  'label': 'إحصائيات التقدم',
+//  'route': '/student_progress_stats',
+//  'icon': Icons.trending_up,
+//  'color': Colors.green, // يجب التأكد من أنه MaterialColor
+//  },
  {
- 'label': 'إحصائيات التقدم',
- 'route': '/student_progress_stats',
- 'icon': Icons.trending_up,
- 'color': Colors.green, // يجب التأكد من أنه MaterialColor
- },
- {
- 'label': 'جدول الحلقات',
- 'route': '/student_schedule',
+ 'label': 'جدول الحضور ',
+ 'route': '/AttendanceTableScreen',
  'icon': Icons.calendar_month,
  'color': Colors.blue, // يجب التأكد من أنه MaterialColor
  },
@@ -97,7 +97,7 @@ class _DashboardState extends State<Dashboard> {
 
 'label': 'نتائج الاختبارات',
 
- 'route': '/student_test_results',
+ 'route': '/QuranTestsScreen_for_stuents',
 
 'icon': Icons.assessment,
 
@@ -109,7 +109,7 @@ class _DashboardState extends State<Dashboard> {
 
 'label': 'متابعة الحفظ',
 
-'route': '/student_recitation_tracker',
+'route': '/StudentPerformanceSummaryScreen',
 
  'icon': Icons.menu_book,
 

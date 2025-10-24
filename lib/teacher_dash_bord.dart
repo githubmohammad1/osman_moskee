@@ -50,18 +50,7 @@ class TeacherDashboard extends StatelessWidget {
         'icon': Icons.calendar_month_rounded,
         'color': Colors.pink, // Changed to MaterialColor
       },
-      {
-        'label': 'مراجعة التسميع',
-        'route': '/students_recitation_list',
-        'icon': Icons.library_books_rounded,
-        'color': Colors.brown, // Changed to MaterialColor
-      },
-      {
-        'label': 'مراجعة ',
-        'route': '/MonthlyAttendanceScreen',
-        'icon': Icons.library_books_rounded,
-        'color': Colors.brown, // Changed to MaterialColor
-      },
+ 
     ];
 
     final screenWidth = MediaQuery.of(context).size.width;

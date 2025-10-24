@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:osman_moskee/providers/QuranTestsProvider.dart';
 import 'package:osman_moskee/providers/UsersProvider.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+
 
 // ===================== الشاشة الرئيسية و TestCard (بدون تغيير) =====================
 class QuranTestsScreen extends StatefulWidget {
@@ -17,35 +17,13 @@ class QuranTestsScreen extends StatefulWidget {
 class _QuranTestsScreenState extends State<QuranTestsScreen> {
   String? token;
 
-  
-  Future<void> subscribeToTopic() async {
 
 
-  await FirebaseMessaging.instance.subscribeToTopic("news");
-  print("✅ تم الاشتراك في موضوع news");
-}
 
-
-  gettoken() async {
-    await FirebaseMessaging.instance
-        .requestPermission(provisional: true);
-    final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-    if (apnsToken != null) {
-      print("APNS Token: $apnsToken");
-      // APNS token is available, make FCM plugin API requests...
-    }
-    final fcmToken = await FirebaseMessaging.instance.getToken(
-      vapidKey:
-          "BIhp2PyHxJwFQHZ0udXEUykddQwq3Y2mEU_HS2udzi6v3trtjav8Ivw06PTdFQY5ujuEziPsvA99EipYx1X6vUQ",
-    );
-    token = fcmToken;
-  
-    print(fcmToken);
-  }
 
   @override
   void initState() {
-    gettoken();
+ 
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<QuranTestsProvider>().fetchAll();
@@ -56,7 +34,7 @@ class _QuranTestsScreenState extends State<QuranTestsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(token ?? "Unknown"), centerTitle: true, elevation: 2),
+      appBar: AppBar(title: Text("tests management"), centerTitle: true, elevation: 2),
       body: Consumer<QuranTestsProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
