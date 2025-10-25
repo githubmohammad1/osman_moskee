@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:osman_moskee/providers/QuranTestsProvider.dart';
 import 'package:osman_moskee/providers/UsersProvider.dart';
 
-
 // ===================== الشاشة الرئيسية و TestCard (بدون تغيير) =====================
 class QuranTestsScreen extends StatefulWidget {
   const QuranTestsScreen({super.key});
@@ -17,13 +16,8 @@ class QuranTestsScreen extends StatefulWidget {
 class _QuranTestsScreenState extends State<QuranTestsScreen> {
   String? token;
 
-
-
-
-
   @override
   void initState() {
- 
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<QuranTestsProvider>().fetchAll();
@@ -34,7 +28,11 @@ class _QuranTestsScreenState extends State<QuranTestsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("tests management"), centerTitle: true, elevation: 2),
+      appBar: AppBar(
+        title: Text("tests management"),
+        centerTitle: true,
+        elevation: 2,
+      ),
       body: Consumer<QuranTestsProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
@@ -167,11 +165,12 @@ class TestCard extends StatelessWidget {
                       );
                       if (confirmed == true) {
                         if (test.containsKey('id')) {
+                          // ✨ التعديل: استدعاء دالة deleteTest مع تمرير ID الاختبار فقط
                           await context.read<QuranTestsProvider>().deleteTest(
-                            test['id'],
-                            test['studentId'],
-                            context
+                            test['id']
+                                as String, // التأكد من نوع البيانات String
                           );
+                          // 💡 ملاحظة: يجب أن تكون 'test['id']' من نوع String.
                         }
                       }
                     },
@@ -390,14 +389,13 @@ class _TestDialogState extends State<TestDialog> {
               if (widget.test == null) {
                 // ✨ الاستدعاء المُبسط الجديد: نرسل الخريطة الموحدة فقط
                 await context.read<QuranTestsProvider>().addTest(data, context);
-
               } else {
                 // التعديل يبقى كما هو
-                await context.read<QuranTestsProvider>().updateTest(
-                  widget.test!['id'],
-                  data,
-                  context
-                );
+               await context.read<QuranTestsProvider>().updateTest(
+  widget.test!['id'] as String, // ✨ التعديل الأول: التأكد من نوع البيانات String
+  data,
+  // ❌ حذف: لم نعد نمرر الـ context
+);
               }
 
               if (mounted) Navigator.pop(context);

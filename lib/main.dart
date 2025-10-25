@@ -19,8 +19,9 @@ import 'package:osman_moskee/providers/UsersProvider.dart';
 import 'package:osman_moskee/screens/for_students/StudentPerformanceSummaryScreen.dart';
 import 'package:osman_moskee/screens/for_students/view_tests_for_students.dart';
 import 'package:osman_moskee/screens/for_teacher/AttendanceTableScreen.dart';
-import 'package:osman_moskee/screens/Dashboard.dart';
 
+
+import 'package:osman_moskee/screens/for_students/Dashboard.dart';
 import 'package:osman_moskee/themes/theme_provider.dart';
 import 'package:osman_moskee/themes/app_themes.dart';
 import 'package:provider/provider.dart';

@@ -1,17 +1,18 @@
+// lib/providers/MemorizationSessionsProvider.dart (الكود النهائي المصحح)
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:osman_moskee/firebase/firestore_service.dart'; // افترض وجود هذه الخدمة
+import 'package:osman_moskee/firebase/firestore_service.dart';
 
 // ================= MEMORIZATION SESSIONS PROVIDER =================
 class MemorizationSessionsProvider with ChangeNotifier {
   final FirestoreService _service = FirestoreService();
-final FirebaseFirestore db = FirebaseFirestore.instance; 
-  // 1. خاصية خاصة لحالات الخطأ لكل جزء (لإظهار الأخطاء في الشاشة)
+
+  // 1. خاصية خاصة لحالات الخطأ لكل جزء 
   final Map<int, String?> _juzErrors = {};
   Map<int, String?> get juzErrors => _juzErrors;
 
-  // 2. خاصية حالة التحميل لكل جزء (لإظهار مؤشر التحميل لكل جزء على حدة)
+  // 2. خاصية حالة التحميل لكل جزء
   final Map<int, bool> _juzLoadingStatus = {};
   Map<int, bool> get juzLoadingStatus => _juzLoadingStatus;
 
@@ -19,47 +20,47 @@ final FirebaseFirestore db = FirebaseFirestore.instance;
   final Map<String, Map<int, Map<int, String>>> _studentJuzRecitations = {};
   Map<String, Map<int, Map<int, String>>> get studentJuzRecitations => _studentJuzRecitations;
 
-  // 4. حالة التحميل العامة (تم الاحتفاظ بها فقط لدوائل التقارير)
+  // 4. حالة التحميل العامة
   bool _isReportLoading = false;
   bool get isReportLoading => _isReportLoading;
-// في ملف MemorizationSessionsProvider.dart
 
-/// يجلب عدد الصفحات المكتمل حفظها (Hifz) للطالب في الشهر الحالي
-Future<int> getMonthlyHifzCount(String studentId) async {
-  final now = DateTime.now();
-  final startOfMonth = Timestamp.fromDate(DateTime(now.year, now.month, 1));
-  
-  // نفترض أنك تخزن تاريخ آخر تحديث لكل صفحة أو تاريخ إنشاء الجلسة
-  final snapshot = await db
-      .collection('memorization_sessions')
-      .where('studentId', isEqualTo: studentId)
-      // قد تحتاج إلى حقل تاريخ خاص بالتسميع الشهري أو الاعتماد على createdAt
-      // للحصول على جميع الجلسات المحدثة في الشهر الحالي
-      .where('createdAt', isGreaterThanOrEqualTo: startOfMonth) 
-      .get();
-      
-  int monthlyHifzPages = 0;
-  
-  for (var doc in snapshot.docs) {
-    final data = doc.data();
-    final recitedPages = data['recitedPages'] as Map<String, dynamic>? ?? {};
-
-    // تجميع عدد الصفحات التي تحمل حالة "Hifz" أو "تمّ"
-    recitedPages.values.forEach((status) {
-      if (status == 'Hifz' || status == 'تمّ') { 
-        monthlyHifzPages++;
-      }
-    });
-  }
-  return monthlyHifzPages;
-}
   // =================================================================
-  // دوال جلب البيانات
+  // دوال التقارير والإحصائيات (آمنة ولا تستدعي notifyListeners)
+  // =================================================================
+
+  /// يجلب عدد الصفحات المكتمل حفظها (Hifz) للطالب في الشهر الحالي
+  Future<int> getMonthlyHifzCount(String studentId) async {
+    final now = DateTime.now();
+    final startOfMonth = Timestamp.fromDate(DateTime(now.year, now.month, 1));
+    
+    try {
+      final snapshot = await _service.fetchMonthlySessions(studentId, startOfMonth);
+      int monthlyHifzPages = 0;
+      
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final recitedPages = data['recitedPages'] as Map<String, dynamic>? ?? {};
+
+        recitedPages.values.forEach((status) {
+          if (status == 'Hifz' || status == 'تمّ') { 
+            monthlyHifzPages++;
+          }
+        });
+      }
+      return monthlyHifzPages;
+    } catch (e) {
+      if (kDebugMode) print("Error fetching monthly hifz count: $e");
+      return 0; 
+    }
+    // 💡 لا يوجد notifyListeners() هنا
+  }
+
+  // =================================================================
+  // دوال جلب البيانات الرئيسية (يجب تأخير الإشعار فيها)
   // =================================================================
 
   /// يجلب حالة تسميع جزء معين لطالب محدد.
   Future<void> loadJuzRecitations(String studentId, int juzNumber) async {
-    // 1. التحقق المنقح لتجنب إعادة التحميل: يجب أن يعتمد على studentId و juzNumber
     final studentData = _studentJuzRecitations[studentId] ?? {};
     if (studentData.containsKey(juzNumber) && !(_juzLoadingStatus[juzNumber] ?? false)) {
       return;
@@ -67,20 +68,14 @@ Future<int> getMonthlyHifzCount(String studentId) async {
 
     _juzLoadingStatus[juzNumber] = true;
     _juzErrors[juzNumber] = null;
-    notifyListeners();
+    // ❌ تم إزالة الاستدعاء المتزامن
+    Future.microtask(() => notifyListeners()); // ✅ تحديث حالة التحميل (Loading)
 
     try {
-      final snapshot = await db
-          .collection('memorization_sessions')
-          .where('studentId', isEqualTo: studentId)
-          .where('juzNumber', isEqualTo: juzNumber)
-          .orderBy('createdAt', descending: true)
-         
-          .get();
+      final snapshot = await _service.fetchLatestJuzRecitation(studentId, juzNumber);
 
       final Map<int, String> pages = {};
       if (snapshot.docs.isNotEmpty) {
-
         final data = snapshot.docs.first.data();
         final recitedPages = data['recitedPages'] as Map<String, dynamic>? ?? {};
 
@@ -92,11 +87,11 @@ Future<int> getMonthlyHifzCount(String studentId) async {
         });
       }
 
-      // 2. تحديث الحالة المحلية بالبنية الجديدة (studentId كالمفتاح الأول)
+      // 2. تحديث الحالة المحلية بالبنية الجديدة 
       _studentJuzRecitations.putIfAbsent(studentId, () => {});
       _studentJuzRecitations[studentId]![juzNumber] = pages;
       
-      _juzErrors[juzNumber] = null;       
+      _juzErrors[juzNumber] = null; 
     } catch (e) {
       _juzErrors[juzNumber] = "فشل تحميل بيانات التسميع: ${e.toString()}";
       if (kDebugMode) {
@@ -106,62 +101,30 @@ Future<int> getMonthlyHifzCount(String studentId) async {
       _studentJuzRecitations[studentId]![juzNumber] = {};
     } finally {
       _juzLoadingStatus[juzNumber] = false;
-      notifyListeners();
+      Future.microtask(() => notifyListeners()); // ✅ تحديث حالة الانتهاء (Finished)
     }
   }
 
 
   /// تقوم بتحديث حالة صفحة معينة في Firestore وتحديث الحالة المحلية.
-  /// تم تعديلها لإزالة التحميل العام والاعتماد على التحديث المحلي فقط.
-Future<void> updateRecitationStatus(
+  Future<void> updateRecitationStatus(
     String studentId,
     int juzNumber,
     int pageNumber,
     String status,
   ) async {
-    // تجنب notifyListeners() في البداية
     try {
-      final querySnapshot = await db
-          .collection('memorization_sessions')
-          .where('studentId', isEqualTo: studentId)
-          .where('juzNumber', isEqualTo: juzNumber)
-          .orderBy('createdAt', descending: true)
-          .limit(1)
-          .get();
+      await _service.updateOrCreateRecitationStatus(
+        studentId: studentId,
+        juzNumber: juzNumber,
+        pageNumber: pageNumber,
+        status: status,
+      );
 
-      // التحديث/الإنشاء
-      if (querySnapshot.docs.isNotEmpty) {
-        final docRef = querySnapshot.docs.first.reference;
-        final currentData = querySnapshot.docs.first.data();
-        
-        final Map<String, dynamic> currentRecitedPages =
-            Map.from(currentData['recitedPages'] as Map<String, dynamic>? ?? {});
-
-        currentRecitedPages[pageNumber.toString()] = status;
-
-        await docRef.update({
-          'recitedPages': currentRecitedPages,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        // 3. تحديث الحالة المحلية بالبنية الجديدة
-        _studentJuzRecitations.putIfAbsent(studentId, () => {});
-        _studentJuzRecitations[studentId]!.putIfAbsent(juzNumber, () => {});
-        _studentJuzRecitations[studentId]![juzNumber]![pageNumber] = status;
-        
-      } else {
-        // إنشاء جلسة جديدة
-        await db.collection('memorization_sessions').add({
-          'studentId': studentId,
-          'juzNumber': juzNumber,
-          'recitedPages': {pageNumber.toString(): status},
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-        // 4. تحديث الحالة المحلية
-        _studentJuzRecitations.putIfAbsent(studentId, () => {});
-        _studentJuzRecitations[studentId]!.putIfAbsent(juzNumber, () => {})[pageNumber] = status;
-      }
+      _studentJuzRecitations.putIfAbsent(studentId, () => {});
+      _studentJuzRecitations[studentId]!.putIfAbsent(juzNumber, () => {});
+      _studentJuzRecitations[studentId]![juzNumber]![pageNumber] = status;
+      
       _juzErrors[juzNumber] = null;
     } catch (e) {
       _juzErrors[juzNumber] = "فشل تحديث التسميع: ${e.toString()}";
@@ -170,20 +133,22 @@ Future<void> updateRecitationStatus(
       }
       rethrow;
     } finally {
-      notifyListeners();
+      Future.microtask(() => notifyListeners()); // ✅ تأخير الإشعار النهائي
     }
   }
+
   // =================================================================
-  // دوال التقارير (تم تعديلها لـ isReportLoading)
+  // دوال التقارير (تم تصحيح مشاكل notifyListeners)
   // =================================================================
 
   /// يجلب عدد مرات التسميع لكل طالب.
- Future<Map<String, int>> getStudentRecitationCounts() async {
+  Future<Map<String, int>> getStudentRecitationCounts() async {
     _isReportLoading = true;
-    notifyListeners();
+    Future.microtask(() => notifyListeners()); // ✅ تأخير تحديث "قيد التحميل"
+    
     final Map<String, int> counts = {};
     try {
-      final querySnapshot = await db.collection('memorization_sessions').get();
+      final querySnapshot = await _service.db.collection('memorization_sessions').get(); 
       for (var doc in querySnapshot.docs) {
         final studentId = doc.data()['studentId'] as String?;
         if (studentId != null) {
@@ -196,14 +161,16 @@ Future<void> updateRecitationStatus(
       }
     } finally {
       _isReportLoading = false;
-      notifyListeners();
+      Future.microtask(() => notifyListeners()); // ✅ تأخير تحديث "اكتمل التحميل"
     }
     return counts;
   }
+
   /// يجلب آخر تاريخ تسميع لكل طالب.
   Future<Map<String, String?>> getLastRecitationDates() async {
     _isReportLoading = true;
-    notifyListeners();
+    Future.microtask(() => notifyListeners()); // ✅ تأخير تحديث "قيد التحميل"
+    
     final Map<String, String?> lastDates = {};
     try {
       final snapshot = await _service.db
@@ -216,11 +183,10 @@ Future<void> updateRecitationStatus(
         final studentId = data['studentId'] as String?;
         
         if (studentId != null && !lastDates.containsKey(studentId)) {
-          // الأفضل هو تحويل Timestamp مباشرة
           final createdAt = data['createdAt'];
           if (createdAt is Timestamp) {
             lastDates[studentId] = createdAt.toDate().toIso8601String();
-          } else if (createdAt is String) { // للتعامل مع السجلات القديمة
+          } else if (createdAt is String) {
             lastDates[studentId] = createdAt;
           }
         }
@@ -231,7 +197,7 @@ Future<void> updateRecitationStatus(
       }
     } finally {
       _isReportLoading = false;
-      notifyListeners();
+      Future.microtask(() => notifyListeners()); // ✅ تأخير تحديث "اكتمل التحميل"
     }
     return lastDates;
   }

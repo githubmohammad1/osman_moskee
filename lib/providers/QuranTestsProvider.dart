@@ -1,11 +1,9 @@
-// lib/providers/QuranTestsProvider.dart
-import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// lib/providers/QuranTestsProvider.dart (الكود المنقح)
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:osman_moskee/firebase/firestore_service.dart';
-import 'package:http/http.dart' as http;
 import 'package:osman_moskee/providers/UsersProvider.dart';
 import 'package:provider/provider.dart';
 
@@ -19,66 +17,40 @@ class QuranTestsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  /// دالة إرسال الإشعار عبر FCM
-  Future<void> sendNotification(String token, String title, String body) async {
-    const serverKey = "ضع_هنا_SERVER_KEY_من_Firebase";
-
-    final response = await http.post(
-      Uri.parse("https://fcm.googleapis.com/fcm/send"),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "key=$serverKey",
-      },
-      body: jsonEncode({
-        "to": token,
-        "notification": {
-          "title": title,
-          "body": body,
-        },
-        "priority": "high",
-      }),
-    );
-
-    if (kDebugMode) {
-      print("📩 FCM response: ${response.body}");
-    }
-  }
+  // ❌ حذف: تم حذف دالة sendNotification بالكامل.
 
   /// جلب جميع الاختبارات
+  // ✨ تعديل: استخدام دالة الخدمة الجديدة
   Future<void> fetchAll({String? studentId, String? testedBy}) async {
     _isLoading = true;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
     try {
-      Query<Map<String, dynamic>> query =
-          _service.db.collection('quran_tests');
+      // 1. الاعتماد على الخدمة لتنفيذ الاستعلام
+      final snapshot = await _service.fetchQuranTests(
+        studentId: studentId,
+        testedBy: testedBy,
+      );
 
-      if (studentId != null) {
-        query = query.where('studentId', isEqualTo: studentId);
-      }
-      if (testedBy != null) {
-        query = query.where('testedBy', isEqualTo: testedBy);
-      }
-
-      final snapshot = await query.get();
       _tests =
           snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
       _error = null;
     } catch (e) {
       _error = e.toString();
+      if (kDebugMode) print('Fetch tests error: $_error');
     }
     _isLoading = false;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
   }
 
   /// إضافة اختبار جديد
   Future<void> addTest(Map<String, dynamic> data, BuildContext context) async {
     try {
-      final partNumber =
-          int.tryParse(data['partNumber']?.toString() ?? '0') ?? 0;
-      final score =
-          double.tryParse(data['score']?.toString() ?? '0.0') ?? 0.0;
+      // 1. تحويل البيانات
+      final partNumber = int.tryParse(data['partNumber']?.toString() ?? '0') ?? 0;
+      final score = double.tryParse(data['score']?.toString() ?? '0.0') ?? 0.0;
       final notes = data['notes'] as String? ?? '';
 
+      // 2. جلب بيانات الطالب المطلوبة للإضافة
       final usersProvider = context.read<UsersProvider>();
       final student = usersProvider.getById(data['studentId']);
       if (student == null) throw Exception("لم يتم العثور على بيانات الطالب");
@@ -86,8 +58,9 @@ class QuranTestsProvider extends ChangeNotifier {
       final studentName = "${student['firstName']} ${student['lastName']}";
       final teacherId = student['teacherId'] ?? "teacher-unknown";
       final createdBy = FirebaseAuth.instance.currentUser?.uid ?? "unknown";
-
-      await _service.addQuranTest(
+      
+      // 3. ✨ تعديل: استدعاء الخدمة والحصول على ID
+      final newId = await _service.addQuranTest(
         studentId: data['studentId'] as String,
         studentName: studentName,
         teacherId: teacherId,
@@ -99,78 +72,70 @@ class QuranTestsProvider extends ChangeNotifier {
         notes: notes,
         createdBy: createdBy,
       );
+      
+      // 4. 🚀 تحسين: التحديث محلياً بدلاً من fetchAll()
+      final newTestData = {
+        'id': newId,
+        'studentId': data['studentId'] as String,
+        'studentName': studentName,
+        'teacherId': teacherId,
+        'testedBy': data['testedBy'] as String,
+        'testType': data['testType'] as String,
+        'partNumber': partNumber,
+        'score': score,
+        'date': data['date'] as String,
+        'notes': notes,
+        'createdBy': createdBy,
+        'createdAt': DateTime.now().toIso8601String(), // قيمة تقريبية للتحديث المحلي
+      };
+      // إضافة العنصر الجديد في البداية (لأنه الأحدث)
+      _tests.insert(0, newTestData); 
 
-      await fetchAll();
+      // ❌ حذف: تم حذف منطق الإشعارات بالكامل
 
-      final tokens = List<String>.from(student['tokens'] ?? []);
-      for (var token in tokens) {
-        await sendNotification(
-          token,
-          "📖 اختبار جديد",
-          "تم إضافة اختبار جديد للطالب $studentName بدرجة $score",
-        );
-      }
     } catch (e) {
       _error = e.toString();
       if (kDebugMode) print('Add test error: $_error');
-      notifyListeners();
     }
+    Future.microtask(() => notifyListeners());
   }
 
   /// تعديل اختبار
-  Future<void> updateTest(
-      String id, Map<String, dynamic> data, BuildContext context) async {
+  Future<void> updateTest(String id, Map<String, dynamic> data) async {
     try {
       await _service.updateQuranTest(id, data);
-      await fetchAll();
-
-      final usersProvider = context.read<UsersProvider>();
-      final student = usersProvider.getById(data['studentId']);
-      if (student == null) throw Exception("لم يتم العثور على بيانات الطالب");
-
-      final studentName = "${student['firstName']} ${student['lastName']}";
-      final score = data['score']?.toString() ?? "";
-
-      final tokens = List<String>.from(student['tokens'] ?? []);
-      for (var token in tokens) {
-        await sendNotification(
-          token,
-          "✏️ تعديل على الاختبار",
-          "تم تعديل نتيجة اختبار الطالب $studentName، الدرجة الجديدة: $score",
-        );
+      
+      // 🚀 تحسين: تحديث القائمة محلياً
+      final index = _tests.indexWhere((test) => test['id'] == id);
+      if (index != -1) {
+        _tests[index] = {
+          ..._tests[index], 
+          ...data,
+          'updatedAt': DateTime.now().toIso8601String(),
+        };
       }
+      
+      // ❌ حذف: تم حذف منطق الإشعارات بالكامل
     } catch (e) {
       _error = e.toString();
       if (kDebugMode) print('Update test error: $_error');
-      notifyListeners();
     }
+    Future.microtask(() => notifyListeners());
   }
 
   /// حذف اختبار
-  Future<void> deleteTest(
-      String id, String studentId, BuildContext context) async {
+  Future<void> deleteTest(String id) async {
     try {
       await _service.deleteQuranTest(id);
-      await fetchAll();
-
-      final usersProvider = context.read<UsersProvider>();
-      final student = usersProvider.getById(studentId);
-      if (student == null) throw Exception("لم يتم العثور على بيانات الطالب");
-
-      final studentName = "${student['firstName']} ${student['lastName']}";
-
-      final tokens = List<String>.from(student['tokens'] ?? []);
-      for (var token in tokens) {
-        await sendNotification(
-          token,
-          "🗑️ حذف اختبار",
-          "تم حذف اختبار الطالب $studentName",
-        );
-      }
+      
+      // 🚀 تحسين: حذف العنصر محلياً
+      _tests.removeWhere((test) => test['id'] == id);
+      
+      // ❌ حذف: تم حذف منطق الإشعارات بالكامل
     } catch (e) {
       _error = e.toString();
       if (kDebugMode) print('Delete test error: $_error');
-      notifyListeners();
     }
+    Future.microtask(() => notifyListeners());
   }
 }
