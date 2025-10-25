@@ -19,13 +19,14 @@ Future<void> fetchAndDisplayAllData(BuildContext context) async {
   try {
     // 1. UsersProvider
     final userProvider = context.read<UsersProvider>();
-    await userProvider.fetchAll();
-    print('\n👤 Users Provider:');
+    // ⚠️ يتم جلب الطلاب فقط لتجنب جلب بيانات المدرسين/المدراء
+    await userProvider.fetchAll(); 
+   
     print('--------------------------');
-    print('عدد المستخدمين: ${userProvider.items.length}');
+    print('عدد الطلاب: ${userProvider.students.length}');
     // عرض أول 3 سجلات فقط كعينة
-    userProvider.items.take(3).forEach((user) {
-      print('  - ID: ${user['id']}, Name: ${user['firstName']} ${user['lastName']}, Role: ${user['role']}');
+    userProvider.students.take(3).forEach((user) {
+      print('  - ID: ${user['id']}, Name: ${user['firstName']} ${user['lastName']}, Role: ${user['role']}');
     });
 
     // 2. QuranTestsProvider
@@ -35,7 +36,7 @@ Future<void> fetchAndDisplayAllData(BuildContext context) async {
     print('--------------------------');
     print('عدد الاختبارات: ${quranTestsProvider.tests.length}');
     quranTestsProvider.tests.take(3).forEach((test) {
-      print('  - ID: ${test['id']}, Student: ${test['studentName']}, Score: ${test['score']}');
+      print('  - ID: ${test['id']}, Student: ${test['studentName']}, Score: ${test['score']}');
     });
 
     // 3. AttendanceSessionsProvider
@@ -45,31 +46,29 @@ Future<void> fetchAndDisplayAllData(BuildContext context) async {
     print('--------------------------');
     print('عدد الجلسات: ${attendanceSessionsProvider.sessions.length}');
     attendanceSessionsProvider.sessions.take(3).forEach((session) {
-      print('  - ID: ${session['id']}, StartTime: ${session['startTime']}');
+      print('  - ID: ${session['id']}, StartTime: ${session['startTime']}');
     });
     
-    // 4. AttendanceRecordsProvider (نحتاج لاستخدام ID من الجلسة السابقة)
+    // 4. AttendanceRecordsProvider (التعديل الرئيسي)
     final attendanceRecordsProvider = context.read<AttendanceRecordsProvider>();
-    String? sampleSessionId = attendanceSessionsProvider.sessions.isNotEmpty 
-                              ? attendanceSessionsProvider.sessions.first['id'] 
-                              : null;
     
-    await attendanceRecordsProvider.fetchAll(sessionId: sampleSessionId);
-    print('\n📝 Attendance Records Provider:');
+    // 🛑 التعديل: إزالة sessionId: sampleSessionId لضمان جلب جميع السجلات.
+    await attendanceRecordsProvider.fetchAll(); 
+    
+    print('\n📝 Attendance Records Provider (جلب شامل):');
     print('--------------------------');
     print('عدد سجلات الحضور: ${attendanceRecordsProvider.records.length}');
-    if (sampleSessionId != null) {
-      print('(تم الجلب باستخدام sessionId: $sampleSessionId)');
-    }
+    print('(تم الجلب بدون تصفية الجلسة لضمان حساب النسبة المئوية)');
+    
     attendanceRecordsProvider.records.take(3).forEach((record) {
-      print('  - ID: ${record['id']}, Person: ${record['personName']}, Status: ${record['status']}');
+      print('  - ID: ${record['id']}, Person: ${record['personName']}, Status: ${record['status']}, Date: ${record['createdAt']}');
     });
     
-    // 5. MemorizationSessionsProvider (لا يوجد دالة fetchAll عامة، سنختبر دالة loadJuzRecitations)
+    // 5. MemorizationSessionsProvider 
     final memorizationProvider = context.read<MemorizationSessionsProvider>();
     String? sampleStudentId = userProvider.students.isNotEmpty 
-                              ? userProvider.students.first['id'] 
-                              : null;
+                               ? userProvider.students.first['id'] 
+                               : null;
     const int sampleJuz = 1; // اختبار الجزء الأول
     
     if (sampleStudentId != null) {
@@ -81,7 +80,7 @@ Future<void> fetchAndDisplayAllData(BuildContext context) async {
       print('عدد صفحات التسميع التي تم تسجيل حالتها: ${recitations?.length ?? 0}');
       
       if (recitations != null && recitations.isNotEmpty) {
-        print('  - مثال (صفحة/حالة): ${recitations.entries.take(2).map((e) => '${e.key}/${e.value}').join(', ')}');
+        print('  - مثال (صفحة/حالة): ${recitations.entries.take(2).map((e) => '${e.key}/${e.value}').join(', ')}');
       }
     } else {
       print('\n📚 Memorization Sessions Provider: لا يوجد طلاب لاختبار جلب التسميع.');
