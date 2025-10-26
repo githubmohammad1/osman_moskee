@@ -26,6 +26,18 @@ class TeacherDashboard extends StatelessWidget {
         'icon': Icons.group_rounded,
         'color': Colors.purple, // Changed to MaterialColor
       },
+      
+ {
+
+'label': 'غرف الدردشة',
+
+'route': '/RoomListScreen',
+
+ 'icon': Icons.chat_bubble_outline,
+
+ 'color': Colors.indigo,
+
+ },
       {
         'label': 'إدارة الحلقات',
         'route': '/HalaqatScreen',

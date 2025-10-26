@@ -92,6 +92,32 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  void _showMessageOptions(DocumentSnapshot doc) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Wrap(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit),
+            title: const Text('تعديل'),
+            onTap: () {
+              Navigator.pop(context);
+              _editMessage(doc);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete),
+            title: const Text('حذف'),
+            onTap: () {
+              Navigator.pop(context);
+              _deleteMessage(doc);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Stream<QuerySnapshot> _messageStream() {
     return FirebaseFirestore.instance
         .collection('chatRooms')
@@ -123,43 +149,43 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       builder: (context, snapshot) {
         final userData = snapshot.data?.data() as Map<String, dynamic>?;
         final firstName = userData?['firstName'] ?? '';
-        // print( firstName);
         final lastName = userData?['lastName'] ?? '';
         final username = '$firstName $lastName'.trim().isEmpty ? 'مستخدم' : '$firstName $lastName';
 
         return Align(
           alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: isMe ? Colors.blue[100] : Colors.grey[300],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                Text(username,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 12)),
-                const SizedBox(height: 4),
-                Text('$timeString - ${data['text'] ?? ''}'),
-                if (canEditOrDelete)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+            child: Material(
+              color: isMe ? const Color(0xFFDCF8C6) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              elevation: 1,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onLongPress: canEditOrDelete
+                    ? () => _showMessageOptions(doc)
+                    : null,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment:
+                        isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, size: 18),
-                        onPressed: () => _editMessage(doc),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, size: 18),
-                        onPressed: () => _deleteMessage(doc),
-                      ),
+                      Text(username,
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 4),
+                      Text(data['text'] ?? '',
+                          style: const TextStyle(fontSize: 16)),
+                      const SizedBox(height: 4),
+                      Text(timeString,
+                          style: TextStyle(fontSize: 10, color: Colors.grey[500])),
                     ],
                   ),
-              ],
+                ),
+              ),
             ),
           ),
         );
@@ -176,8 +202,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       builder: (context, snapshot) {
         final typingUsers = snapshot.data?.docs ?? [];
         if (typingUsers.isEmpty) return const SizedBox();
-        return Padding(
-          padding: const EdgeInsets.all(8),
+        return Container(
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Text('يكتب الآن...', style: TextStyle(color: Colors.grey[600])),
         );
       },
@@ -216,20 +243,33 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ),
           const Divider(height: 1),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    onChanged: (text) => _updateTyping(text.isNotEmpty),
-                    decoration:
-                        const InputDecoration(hintText: 'اكتب رسالتك...'),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: TextField(
+                      controller: _messageController,
+                      onChanged: (text) => _updateTyping(text.isNotEmpty),
+                      decoration: const InputDecoration(
+                        hintText: 'اكتب رسالة...',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                    ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _sendMessage,
+                const SizedBox(width: 6),
+                CircleAvatar(
+                  backgroundColor: Colors.green,
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: _sendMessage,
+                  ),
                 ),
               ],
             ),

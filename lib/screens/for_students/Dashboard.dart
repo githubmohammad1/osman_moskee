@@ -119,7 +119,7 @@ class _DashboardState extends State<Dashboard> {
 
  {
 
-'label': 'التواصل مع المعلم',
+'label': 'غرف الدردشة',
 
 'route': '/RoomListScreen',
 

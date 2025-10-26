@@ -126,11 +126,90 @@ class _RoomListScreenState extends State<RoomListScreen> {
 
   bool get isPrivileged => userRole == 'teacher' || userRole == 'admin';
 
+  Widget _buildRoomItem(DocumentSnapshot room) {
+    final data = room.data() as Map<String, dynamic>;
+    final roomName = data['name'] ?? 'غرفة بدون اسم';
+    final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
+    final timeString = createdAt != null
+        ? '${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}'
+        : '';
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatRoomScreen(roomId: room.id),
+          ),
+        );
+      },
+      onLongPress: isPrivileged
+          ? () => _showRoomOptions(room.id, roomName)
+          : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              backgroundColor: Colors.green,
+              child: Icon(Icons.group, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(roomName,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('آخر نشاط: $timeString',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                ],
+              ),
+            ),
+            if (isPrivileged)
+              IconButton(
+                icon: const Icon(Icons.more_vert),
+                onPressed: () => _showRoomOptions(room.id, roomName),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showRoomOptions(String roomId, String roomName) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Wrap(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit),
+            title: const Text('تعديل'),
+            onTap: () {
+              Navigator.pop(context);
+              _showEditRoomDialog(context, roomId, roomName);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete),
+            title: const Text('حذف'),
+            onTap: () {
+              Navigator.pop(context);
+              _deleteRoom(roomId);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('غرف المحادثة'),
+        title: const Text('المحادثات'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -153,67 +232,8 @@ class _RoomListScreenState extends State<RoomListScreen> {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(12),
             itemCount: rooms.length,
-            itemBuilder: (context, index) {
-              final room = rooms[index];
-              final data = room.data() as Map<String, dynamic>;
-              final roomName = data['name'] ?? 'غرفة بدون اسم';
-
-              return Card(
-                elevation: 3,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  title: Text(
-                    roomName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Room ID: ${room.id}',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  leading: const Icon(Icons.meeting_room, color: Colors.blue),
-                  trailing: isPrivileged
-                      ? PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert),
-                          onSelected: (value) {
-                            if (value == 'edit') {
-                              _showEditRoomDialog(context, room.id, roomName);
-                            } else if (value == 'delete') {
-                              _deleteRoom(room.id);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'edit',
-                              child: Text('تعديل'),
-                            ),
-                            const PopupMenuItem(
-                              value: 'delete',
-                              child: Text('حذف'),
-                            ),
-                          ],
-                        )
-                      : const Icon(Icons.chat, color: Colors.grey),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChatRoomScreen(roomId: room.id),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
+            itemBuilder: (context, index) => _buildRoomItem(rooms[index]),
           );
         },
       ),
