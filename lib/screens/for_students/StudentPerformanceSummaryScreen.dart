@@ -265,8 +265,8 @@ recordDate.isBefore(endOfNextMonth);
       future: _getMonthlyPagesSaved(student['id'], context),
       builder: (context, snapshot) {
         print(snapshot.data);
-        final monthlyPagesSaved = snapshot.data ?? 0;
-        final hifzLoading = snapshot.connectionState == ConnectionState.waiting;
+        // final monthlyPagesSaved = snapshot.data ?? 0;
+        // final hifzLoading = snapshot.connectionState == ConnectionState.waiting;
         
         // ... (بناء البطاقة) ...
         return Card(

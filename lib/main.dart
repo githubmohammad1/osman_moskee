@@ -16,6 +16,7 @@ import 'package:osman_moskee/providers/AttendanceSessionsProvider.dart';
 import 'package:osman_moskee/providers/MemorizationSessionsProvider.dart';
 import 'package:osman_moskee/providers/QuranTestsProvider.dart';
 import 'package:osman_moskee/providers/UsersProvider.dart';
+import 'package:osman_moskee/screens/chat_rooms/RoomListScreen.dart';
 import 'package:osman_moskee/screens/for_students/StudentPerformanceSummaryScreen.dart';
 import 'package:osman_moskee/screens/for_students/view_tests_for_students.dart';
 import 'package:osman_moskee/screens/for_teacher/AttendanceTableScreen.dart';
@@ -114,6 +115,7 @@ class MyApp extends StatelessWidget {
                '/QuranTestsScreen_for_stuents': (_) => const QuranTestsScreen_for_stuents(),
               '/AttendanceTableScreen': (_) => const AttendanceTableScreen(),
 
+'/RoomListScreen': (_) => const RoomListScreen(),
               '/StudentPerformanceSummaryScreen': (_) => const StudentPerformanceSummaryScreen(),
              
             },

@@ -121,7 +121,7 @@ class _DashboardState extends State<Dashboard> {
 
 'label': 'التواصل مع المعلم',
 
-'route': '/contact_teacher',
+'route': '/RoomListScreen',
 
  'icon': Icons.chat_bubble_outline,
 
