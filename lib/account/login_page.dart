@@ -16,6 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final authService = AuthService();
   bool _obscurePassword = true;
   bool isLoading = false;
+  // ignore: unused_field
   String? _errorMessage;
 
   /// حفظ التوكين في Firestore وربطه بالمستخدم

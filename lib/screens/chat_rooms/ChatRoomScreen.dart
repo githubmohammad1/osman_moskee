@@ -13,6 +13,24 @@ class ChatRoomScreen extends StatefulWidget {
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final TextEditingController _messageController = TextEditingController();
   final user = FirebaseAuth.instance.currentUser;
+  String? userRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserRole();
+  }
+
+  Future<void> _fetchUserRole() async {
+    if (user == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .get();
+    setState(() {
+      userRole = doc.data()?['role'];
+    });
+  }
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
@@ -26,9 +44,52 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       'text': text,
       'senderId': user!.uid,
       'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
     });
 
     _messageController.clear();
+    _updateTyping(false);
+  }
+
+  void _updateTyping(bool isTyping) {
+    if (user != null) {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .update({'isTyping': isTyping});
+    }
+  }
+
+  Future<void> _deleteMessage(DocumentSnapshot doc) async {
+    await doc.reference.delete();
+  }
+
+  Future<void> _editMessage(DocumentSnapshot doc) async {
+    final TextEditingController editController =
+        TextEditingController(text: (doc.data() as Map)['text']);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تعديل الرسالة'),
+        content: TextField(controller: editController),
+        actions: [
+          TextButton(
+            child: const Text('إلغاء'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            child: const Text('حفظ'),
+            onPressed: () async {
+              final newText = editController.text.trim();
+              if (newText.isNotEmpty) {
+                await doc.reference.update({'text': newText});
+              }
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Stream<QuerySnapshot> _messageStream() {
@@ -40,35 +101,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         .snapshots();
   }
 
-  Widget _buildRoomStats() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _messageStream(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox();
-
-        final messages = snapshot.data!.docs;
-        final uniqueSenders = messages
-            .map((doc) => (doc.data() as Map)['senderId'])
-            .toSet()
-            .length;
-
-        return Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('عدد الرسائل: ${messages.length}'),
-              Text('عدد المشاركين: $uniqueSenders'),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildMessageItem(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final isMe = data['senderId'] == user?.uid;
+    final canEditOrDelete = isMe || (userRole == 'teacher' || userRole == 'admin');
+
+    if (!isMe && !(data['isRead'] ?? false)) {
+      doc.reference.update({'isRead': true});
+    }
+
+    final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+    final timeString = timestamp != null
+        ? '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}'
+        : '';
 
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
@@ -78,9 +123,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       builder: (context, snapshot) {
         final userData = snapshot.data?.data() as Map<String, dynamic>?;
         final firstName = userData?['firstName'] ?? '';
+        // print( firstName);
         final lastName = userData?['lastName'] ?? '';
-        final rawName = '$firstName $lastName'.trim();
-        final username = rawName.isEmpty ? 'مستخدم' : rawName;
+        final username = '$firstName $lastName'.trim().isEmpty ? 'مستخدم' : '$firstName $lastName';
 
         return Align(
           alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -99,7 +144,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 12)),
                 const SizedBox(height: 4),
-                Text(data['text'] ?? ''),
+                Text('$timeString - ${data['text'] ?? ''}'),
+                if (canEditOrDelete)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 18),
+                        onPressed: () => _editMessage(doc),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, size: 18),
+                        onPressed: () => _deleteMessage(doc),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -108,13 +167,36 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  Widget _buildTypingIndicator() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .where('isTyping', isEqualTo: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final typingUsers = snapshot.data?.docs ?? [];
+        if (typingUsers.isEmpty) return const SizedBox();
+        return Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text('يكتب الآن...', style: TextStyle(color: Colors.grey[600])),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _updateTyping(false);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('غرفة المحادثة')),
       body: Column(
         children: [
-          _buildRoomStats(),
+          _buildTypingIndicator(),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _messageStream(),
@@ -140,6 +222,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+                    onChanged: (text) => _updateTyping(text.isNotEmpty),
                     decoration:
                         const InputDecoration(hintText: 'اكتب رسالتك...'),
                   ),
