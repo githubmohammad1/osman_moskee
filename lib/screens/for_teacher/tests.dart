@@ -58,6 +58,7 @@ class _QuranTestsScreenState extends State<QuranTestsScreen> {
         onPressed: () =>
             showDialog(context: context, builder: (_) => const TestDialog()),
         child: const Icon(Icons.add),
+        
       ),
     );
   }
@@ -113,11 +114,11 @@ class TestCard extends StatelessWidget {
               ),
               title: Text(
                 '${test['testType'] ?? 'نوع غير محدد'} - الجزء ${test['partNumber'] ?? '?'}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.black87,
-                ),
+                // style: const TextStyle(
+                //   fontWeight: FontWeight.bold,
+                //   fontSize: 16,
+                //   color: Colors.black87,
+                // ),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

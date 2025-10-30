@@ -75,7 +75,7 @@ class TeacherDashboard extends StatelessWidget {
         appBar: AppBar(
           title: const Text(
             'لوحة تحكم المعلم',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            // style: TextStyle(fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
           elevation: 0,
@@ -141,6 +141,7 @@ class _DashboardCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(20),
+
             gradient: LinearGradient(
               colors: [cardColor, cardColor.withOpacity(0.8)],
               begin: Alignment.topLeft,
@@ -155,7 +156,7 @@ class _DashboardCard extends StatelessWidget {
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: theme.textTheme.titleLarge?.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: textColor,
