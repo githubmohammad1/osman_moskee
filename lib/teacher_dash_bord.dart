@@ -74,7 +74,7 @@ class TeacherDashboard extends StatelessWidget {
         drawer: const AppDrawer(),
         appBar: AppBar(
           title: const Text(
-            'لوحة تحكم المعلم',
+            ' المحدثة لوحة تحكم المعلم',
             // style: TextStyle(fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
