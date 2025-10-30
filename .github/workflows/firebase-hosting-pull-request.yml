@@ -13,9 +13,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      # ⬅️ تمت إضافة هذه الخطوة الضرورية لتنصيب وتهيئة Flutter على الخادم
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable' # يمكنك استخدام 'beta' أو 'master' حسب الحاجة، ولكن 'stable' هو الأفضل
+          cache: true # لتسريع عمليات البناء المستقبلية
+          
       - run: flutter build web
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_OSMAN_MOSKEE }}
           projectId: osman-moskee
+```eof
+
+بعد تطبيق هذا التعديل وحفظ الملف في مساره (`.github/workflows/firebase-hosting-pr.yml`)، لن تظهر رسالة `flutter: command not found` مرة أخرى، وسيتمكن GitHub Actions من بناء ونشر نسخة المعاينة لتطبيقك.
+
+هل تود الآن أن ننتقل إلى مفاهيم Flutter المتبقية مثل **دورة حياة الـ Widget (Widget Lifecycle)**، أم نركز على مفاهيم البرمجة الشيئية في Dart مثل **الـ Mixins**؟
