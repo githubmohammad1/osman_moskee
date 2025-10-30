@@ -187,7 +187,7 @@ class _DashboardState extends State<Dashboard> {
                     ? const Text('جارٍ التحميل...') // عرض حالة التحميل
                     : Text(
                         _userName != null ? 'أهلاً بك، $_userName' : 'لوحة التحكم',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                       
                       ),
                 centerTitle: true,
                 backgroundColor: Colors.transparent, // شفاف ليظهر التدرج

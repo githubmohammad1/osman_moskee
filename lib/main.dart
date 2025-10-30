@@ -35,6 +35,9 @@ import 'package:osman_moskee/screens/for_teacher/HalaqatScreen.dart';
 import 'package:osman_moskee/screens/for_teacher/AttendanceTakeScreen.dart';
 import 'package:osman_moskee/screens/for_teacher/SessionsListScreen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+
+
+
 void requestNotificationPermission() async {
   NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
     alert: true,
