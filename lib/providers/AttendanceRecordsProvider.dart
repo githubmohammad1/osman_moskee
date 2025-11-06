@@ -1,12 +1,13 @@
-// lib/providers/AttendanceRecordsProvider.dart (الكود المنقح)
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:osman_moskee/firebase/firestore_service.dart';
+// يجب تغيير الاستيراد ليتوافق مع AttendanceService
+import 'package:osman_moskee/services/attendance_service.dart'; // افتراض مسار الخدمة
 
 // ================= ATTENDANCE RECORDS PROVIDER =================
 class AttendanceRecordsProvider extends ChangeNotifier {
-  final FirestoreService _service = FirestoreService();
+  // ✔️ تحديث: استخدام AttendanceService
+  final AttendanceService _service = AttendanceService();
+  
   List<Map<String, dynamic>> _records = [];
   bool _isLoading = false;
   String? _error;
@@ -19,26 +20,24 @@ class AttendanceRecordsProvider extends ChangeNotifier {
   
   bool get isSettingRecord => _isSettingRecord; 
 
-  // ✨ تعديل: استخدام دالة الخدمة الجديدة
-  Future<void> fetchAll({String? sessionId, String? studentId, String? role}) async {
-_isLoading = true;
+  // ✨ جلب جميع السجلات مع إمكانية التصفية
+  Future<void> fetchAll({String? sessionId, String? personId, String? role}) async {
+    _isLoading = true;
     Future.microtask(() => notifyListeners());
     try {
+      // 1. استدعاء دالة الخدمة
       final snapshot = await _service.fetchAttendanceRecords(
         sessionId: sessionId,
-        personId: studentId, // استخدام personId ليتطابق مع اسم الحقل في Firestore
+        personId: personId, // استخدام personId ليتطابق مع اسم الحقل في Firestore
         role: role,
       );
 
-      // =======================================================
-      // 🚀 التعديل الرئيسي: تحويل Timestamp إلى String عند الجلب
-      // =======================================================
+      // 2. تحويل Timestamp إلى String عند الجلب
       _records = snapshot.docs.map((doc) {
         final data = doc.data();
         
         // التحقق والتحويل لحقول التاريخ التي يتم إرجاعها كـ Timestamp
         if (data.containsKey('createdAt') && data['createdAt'] is Timestamp) {
-            // تحويل Timestamp إلى ISO8601 String
             data['createdAt'] = (data['createdAt'] as Timestamp).toDate().toIso8601String();
         }
         if (data.containsKey('updatedAt') && data['updatedAt'] is Timestamp) {
@@ -53,16 +52,16 @@ _isLoading = true;
         
         return {'id': doc.id, ...data};
       }).toList();
-      // =======================================================
+      
       _error = null;
     } catch (e) {
-      _error = e.toString();
+      _error = 'Failed to fetch attendance records: ${e.toString()}';
     }
     _isLoading = false;
     Future.microtask(() => notifyListeners());
   }
 
-  // ✨ تعديل: استخدام دالة الخدمة المُركّبة وتحديث محلي
+  // ✨ دالة لإنشاء أو تحديث سجل حضور
   Future<void> setRecord({
     required String sessionId,
     required String personId,
@@ -80,11 +79,12 @@ _isLoading = true;
       // تجهيز البيانات الأساسية المطلوبة لعملية التحديث/الإنشاء
       final Map<String, dynamic> data = {
         'status': status,
+        // ✔️ تحويل DateTime إلى Timestamp قبل الإرسال
         'checkInTime': checkInTime != null ? Timestamp.fromDate(checkInTime) : null, 
         'checkOutTime': checkOutTime != null ? Timestamp.fromDate(checkOutTime) : null,
         'notes': notes,
         
-        // بيانات الإنشاء (ضرورية في حالة الإنشاء)
+        // بيانات الإنشاء
         'sessionId': sessionId,
         'personId': personId,
         'personName': personName,
@@ -98,26 +98,35 @@ _isLoading = true;
         data: data,
       );
       
-      // 2. 🚀 تحسين: التحديث المحلي (بدلاً من fetchAll)
+      // 2. 🚀 تحسين: التحديث المحلي
       final id = updatedRecordData['id'] as String;
       final index = _records.indexWhere((r) => r['id'] == id);
 
-      // التأكد من تحويل Timestamps إلى صيغة يمكن للمزود قراءتها محلياً
+      // التأكد من تحويل Timestamps المرجعة من الخدمة إلى String لتخزينها محلياً
       final localData = Map<String, dynamic>.from(updatedRecordData);
-      localData['checkInTime'] = (localData['checkInTime'] as Timestamp?)?.toDate().toIso8601String();
-      localData['checkOutTime'] = (localData['checkOutTime'] as Timestamp?)?.toDate().toIso8601String();
-      localData['updatedAt'] = (localData['updatedAt'] as Timestamp?)?.toDate().toIso8601String();
+      localData['checkInTime'] = (localData['checkInTime'] is Timestamp?) 
+                               ? (localData['checkInTime'] as Timestamp?)?.toDate().toIso8601String()
+                               : localData['checkInTime'];
+      localData['checkOutTime'] = (localData['checkOutTime'] is Timestamp?) 
+                                ? (localData['checkOutTime'] as Timestamp?)?.toDate().toIso8601String()
+                                : localData['checkOutTime'];
+      localData['updatedAt'] = (localData['updatedAt'] is Timestamp?) 
+                             ? (localData['updatedAt'] as Timestamp?)?.toDate().toIso8601String()
+                             : localData['updatedAt'];
+      localData['createdAt'] = (localData['createdAt'] is Timestamp?) 
+                             ? (localData['createdAt'] as Timestamp?)?.toDate().toIso8601String()
+                             : localData['createdAt'];
       
       if (index != -1) {
         // تحديث العنصر الموجود
         _records[index] = localData;
       } else {
-        // إضافة العنصر الجديد (نضع الجديد في البداية إن أمكن)
+        // إضافة العنصر الجديد
         _records.insert(0, localData);
       }
       
     } catch (e) {
-      _error = e.toString();
+      _error = 'Failed to set record: ${e.toString()}';
       if (kDebugMode) print('Set record error: $_error');
     } finally {
       _isSettingRecord = false;

@@ -2,11 +2,12 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:osman_moskee/firebase/firestore_service.dart';
+
+import 'package:osman_moskee/services/memorization_service.dart';
 
 // ================= MEMORIZATION SESSIONS PROVIDER =================
 class MemorizationSessionsProvider with ChangeNotifier {
-  final FirestoreService _service = FirestoreService();
+  final MemorizationService _service = MemorizationService();
 
   // 1. خاصية خاصة لحالات الخطأ لكل جزء 
   final Map<int, String?> _juzErrors = {};

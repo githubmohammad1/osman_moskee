@@ -81,7 +81,7 @@ flutter:
         - asset: assets/fonts/NotoSansArabic-VariableFont_wdth,wght.ttf
           weight: 400
 
-  assets:
+  # assets:
     # No additional asset directories specified. Uncomment or add asset paths here
     # if you create the assets/fonts/ directory or add other asset files, e.g.:
     # - assets/images/
