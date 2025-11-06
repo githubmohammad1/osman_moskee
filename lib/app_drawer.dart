@@ -151,7 +151,7 @@ class AppDrawer extends StatelessWidget {
                 trailing: Switch(
                   value: themeProvider.isDarkMode,
                   onChanged: (value) => themeProvider.toggleTheme(),
-                  activeColor: Colors.amber,
+                  activeThumbColor: Colors.amber,
                 ),
                 onTap: () => themeProvider.toggleTheme(),
               );

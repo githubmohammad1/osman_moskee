@@ -54,6 +54,8 @@ dependencies:
   googleapis_auth: ^2.0.0
   data_table_2: ^2.6.0
   google_fonts: ^6.3.2
+  firebase_storage: ^13.0.4
+  image_picker: ^1.2.0
   # pluto_grid: ^6.0.0 
 
 dev_dependencies:
