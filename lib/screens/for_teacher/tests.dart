@@ -1,5 +1,3 @@
-// lib/screens/quran_tests_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -19,9 +17,11 @@ class _QuranTestsScreenState extends State<QuranTestsScreen> {
   @override
   void initState() {
     super.initState();
+    // تأخير استدعاء جلب البيانات حتى يتم بناء الشجرة Widget
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // إيقاف جلب بيانات المستخدمين حتى يتم تحديد ما إذا كان المستخدم الحالي معلماً أم لا
+      context.read<UsersProvider>().fetchAll(); 
       context.read<QuranTestsProvider>().fetchAll();
-      context.read<UsersProvider>().fetchAll();
     });
   }
 
@@ -29,7 +29,7 @@ class _QuranTestsScreenState extends State<QuranTestsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("tests management"),
+        title: Text("إدارة الاختبارات"), // تعديل النص للعربية
         centerTitle: true,
         elevation: 2,
       ),
@@ -58,7 +58,6 @@ class _QuranTestsScreenState extends State<QuranTestsScreen> {
         onPressed: () =>
             showDialog(context: context, builder: (_) => const TestDialog()),
         child: const Icon(Icons.add),
-        
       ),
     );
   }
@@ -68,11 +67,11 @@ class TestCard extends StatelessWidget {
   final Map<String, dynamic> test;
   const TestCard({super.key, required this.test});
 
-  // ... (باقي كود TestCard كما هو) ...
   @override
   Widget build(BuildContext context) {
     return Consumer<UsersProvider>(
       builder: (context, usersProvider, child) {
+        // نستخدم usersProvider لجلب بيانات الطالب والمعلم
         final student = test.containsKey('studentId')
             ? usersProvider.getById(test['studentId'])
             : null;
@@ -114,11 +113,6 @@ class TestCard extends StatelessWidget {
               ),
               title: Text(
                 '${test['testType'] ?? 'نوع غير محدد'} - الجزء ${test['partNumber'] ?? '?'}',
-                // style: const TextStyle(
-                //   fontWeight: FontWeight.bold,
-                //   fontSize: 16,
-                //   color: Colors.black87,
-                // ),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,12 +160,10 @@ class TestCard extends StatelessWidget {
                       );
                       if (confirmed == true) {
                         if (test.containsKey('id')) {
-                          // ✨ التعديل: استدعاء دالة deleteTest مع تمرير ID الاختبار فقط
+                          // ✔️ تم التأكد من تمرير ID الاختبار فقط
                           await context.read<QuranTestsProvider>().deleteTest(
-                            test['id']
-                                as String, // التأكد من نوع البيانات String
-                          );
-                          // 💡 ملاحظة: يجب أن تكون 'test['id']' من نوع String.
+                                test['id'] as String,
+                              );
                         }
                       }
                     },
@@ -218,7 +210,8 @@ class _TestDialogState extends State<TestDialog> {
     selectedTestType = widget.test?['testType'];
 
     final initialDateString = widget.test?['date'];
-    if (initialDateString != null) {
+    // يتم التأكد من أن التاريخ هو String صالح
+    if (initialDateString != null && initialDateString is String) {
       selectedDate = DateTime.tryParse(initialDateString);
     }
 
@@ -251,6 +244,7 @@ class _TestDialogState extends State<TestDialog> {
       initialDate: selectedDate ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
+      // نستخدم اللغة العربية، تأكد من تهيئة اللغة في MaterialApp
       locale: const Locale('ar', ''),
     );
     if (picked != null) {
@@ -264,8 +258,14 @@ class _TestDialogState extends State<TestDialog> {
   @override
   Widget build(BuildContext context) {
     final usersProvider = context.watch<UsersProvider>();
-    final studentsList = usersProvider.students;
-    final teachersList = usersProvider.teachers;
+    final quranProvider = context.read<QuranTestsProvider>();
+    // نقوم بتصفية قائمة المستخدمين للحصول على الطلاب والمعلمين
+    final studentsList = usersProvider.items
+        .where((u) => u['role'] == 'student')
+        .toList(); // افتراض أن لديك قائمة موحدة باسم users
+    final teachersList = usersProvider.items
+        .where((u) => u['role'] == 'teacher')
+        .toList(); // افتراض أن لديك قائمة موحدة باسم users
 
     return AlertDialog(
       title: Text(widget.test == null ? 'إضافة اختبار جديد' : 'تعديل الاختبار'),
@@ -275,7 +275,7 @@ class _TestDialogState extends State<TestDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ... (جميع حقول الإدخال كما هي) ...
+              // اختيار الطالب
               DropdownButtonFormField<String>(
                 value: selectedStudentId,
                 decoration: const InputDecoration(labelText: 'اختر الطالب'),
@@ -291,6 +291,7 @@ class _TestDialogState extends State<TestDialog> {
                 validator: (value) => value == null ? 'يجب اختيار طالب' : null,
               ),
               const SizedBox(height: 12),
+              // اختيار الأستاذ (المصحح)
               DropdownButtonFormField<String>(
                 value: selectedTestedBy,
                 decoration: const InputDecoration(
@@ -308,6 +309,7 @@ class _TestDialogState extends State<TestDialog> {
                 validator: (value) => value == null ? 'يجب اختيار أستاذ' : null,
               ),
               const SizedBox(height: 12),
+              // نوع الاختبار
               DropdownButtonFormField<String>(
                 value: selectedTestType,
                 decoration: const InputDecoration(labelText: 'نوع الاختبار'),
@@ -319,6 +321,7 @@ class _TestDialogState extends State<TestDialog> {
                     value == null ? 'يجب تحديد نوع الاختبار' : null,
               ),
               const SizedBox(height: 12),
+              // رقم الجزء
               TextFormField(
                 controller: partNumberController,
                 decoration: const InputDecoration(labelText: 'رقم الجزء'),
@@ -332,6 +335,7 @@ class _TestDialogState extends State<TestDialog> {
                 },
               ),
               const SizedBox(height: 12),
+              // الدرجة
               TextFormField(
                 controller: scoreController,
                 decoration: const InputDecoration(labelText: 'الدرجة'),
@@ -344,6 +348,7 @@ class _TestDialogState extends State<TestDialog> {
                 },
               ),
               const SizedBox(height: 12),
+              // التاريخ
               TextFormField(
                 controller: dateController,
                 decoration: InputDecoration(
@@ -359,6 +364,7 @@ class _TestDialogState extends State<TestDialog> {
                     value!.isEmpty ? 'يجب إدخال التاريخ' : null,
               ),
               const SizedBox(height: 12),
+              // الملاحظات
               TextFormField(
                 controller: notesController,
                 decoration: const InputDecoration(labelText: 'ملاحظات'),
@@ -380,23 +386,23 @@ class _TestDialogState extends State<TestDialog> {
                 'studentId': selectedStudentId,
                 'testedBy': selectedTestedBy,
                 'testType': selectedTestType,
-                // نرسل القيم كنصوص إلى Provider، وسيقوم هو بتحويلها عند استدعاء Service
-                'partNumber': partNumberController.text.trim(),
-                'score': scoreController.text.trim(),
+                // ✔️ التحويل إلى أنواع البيانات الأصلية قبل الإرسال
+                'partNumber': int.tryParse(partNumberController.text.trim()),
+                'score': double.tryParse(scoreController.text.trim()),
                 'date': dateController.text.trim(),
                 'notes': notesController.text.trim(),
               };
 
               if (widget.test == null) {
-                // ✨ الاستدعاء المُبسط الجديد: نرسل الخريطة الموحدة فقط
-                await context.read<QuranTestsProvider>().addTest(data, context);
+                // إضافة جديد
+                await quranProvider.addTest(data, context);
               } else {
-                // التعديل يبقى كما هو
-               await context.read<QuranTestsProvider>().updateTest(
-  widget.test!['id'] as String, // ✨ التعديل الأول: التأكد من نوع البيانات String
-  data,
-  // ❌ حذف: لم نعد نمرر الـ context
-);
+               final testId = widget.test!['id'] as String;
+                // ✔️ استخدام المتغير المحلي quranProvider
+                await quranProvider.updateTest(
+                      testId,
+                      data,
+                    );
               }
 
               if (mounted) Navigator.pop(context);

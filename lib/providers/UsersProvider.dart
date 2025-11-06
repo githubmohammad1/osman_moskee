@@ -1,12 +1,11 @@
-// lib/providers/UsersProvider.dart (الكود المنقح)
-
 import 'package:flutter/foundation.dart';
-import 'package:osman_moskee/firebase/firestore_service.dart';
+import 'package:osman_moskee/services/user_service.dart';
 
 // ================= USERS PROVIDER =================
 class UsersProvider extends ChangeNotifier {
-  final FirestoreService _service = FirestoreService();
+  final UserService _service = UserService();
   
+  // ✔️ تهيئة القائمة بقائمة فارغة [] لتجنب خطأ 'NoSuchMethodError: where'
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
   String? _error;
@@ -15,78 +14,91 @@ class UsersProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  // الخصائص المحسوبة للطلاب والمعلمين
   List<Map<String, dynamic>> get students => _items.where((u) => u['role'] == 'student').toList();
   List<Map<String, dynamic>> get teachers => _items.where((u) => u['role'] == 'teacher').toList();
   
   Map<String, dynamic>? getById(String? id) {
     if (id == null) return null;
     try {
-      // استخدام .firstWhere بفعالية
+      // البحث بفعالية في القائمة المحلية
       return _items.firstWhere((user) => user['id'] == id);
     } catch (e) {
       return null;
     }
   }
 
-  // ✨ تعديل: استخدام دالة الخدمة الجديدة
+  // 1. جلب جميع المستخدمين
   Future<void> fetchAll() async {
     _isLoading = true;
     Future.microtask(() => notifyListeners());
     try {
-      // 1. استخدام دالة الخدمة لجلب البيانات (بدل الوصول المباشر لـ db)
       final snapshot = await _service.fetchAllUsers(); 
       
+      // تحويل المستندات إلى قائمة Map
       _items = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
       _error = null;
     } catch (e) {
-      _error = e.toString();
+      _error = 'Failed to fetch users: ${e.toString()}';
     }
     _isLoading = false;
     Future.microtask(() => notifyListeners());
   }
 
-  // ✨ تعديل: إضافة مستخدم وتحديث القائمة محلياً فقط
+  // 2. إضافة مستخدم جديد (Add User) - تحديث محلي
   Future<void> addUser(Map<String, dynamic> data) async {
-    // 1. استدعاء دالة الخدمة
-    await _service.addUser(data); 
+    _error = null; 
+    try {
+      // 1. استدعاء دالة الخدمة للحفظ في Firestore والحصول على ID
+      final String newId = await _service.addUser(data); 
+      
+      // 2. بناء المستخدم الجديد وإضافته للقائمة محلياً
+      final newUser = {
+        'id': newId, 
+        ...data,
+      };
+      _items.add(newUser);
+      
+    } catch (e) {
+      _error = 'Failed to add user: ${e.toString()}';
+    }
     
-    // 2. ⚠️ هنا نحتاج لجلب ID الجديد. بما أن FirestoreService.addUser تستخدم .add()
-    // فهي تولد ID تلقائي. لتحديث القائمة محلياً، نحتاج إلى fetchAll()، 
-    // أو لتعديل FirestoreService.addUser لترجع الـ DocumentReference، 
-    // ولكن لتجنب التعديلات الجذرية، سنحتفظ بـ fetchAll() هنا مؤقتاً:
-    await fetchAll();
+    Future.microtask(() => notifyListeners());
   }
 
-  // ✨ تحسين الكفاءة: تحديث محلي وتجنب إعادة جلب الجميع
+  // 3. تحديث مستخدم موجود (Update User) - تحديث محلي
   Future<void> updateUser(String id, Map<String, dynamic> data) async {
-    await _service.updateUser(id, data);
-    
-    // 🚀 تحسين: تحديث القائمة محلياً بدلاً من fetchAll()
+    _error = null;
     try {
+      await _service.updateUser(id, data);
+    
+      // تحديث القائمة محلياً لتجنب الجلب الكامل
       final index = _items.indexWhere((user) => user['id'] == id);
       if (index != -1) {
         // ندمج البيانات الجديدة مع البيانات القديمة
         _items[index] = {
           ..._items[index], 
           ...data,
-          'updatedAt': DateTime.now().toIso8601String(), // تحديث طابع الوقت محلياً (تقريبياً)
         };
       }
     } catch (e) {
-      // في حال فشل التحديث المحلي، نلجأ إلى الجلب الكامل كـ Fallback
-      await fetchAll(); 
-      return;
+      _error = 'Failed to update user $id: ${e.toString()}';
     }
     
     Future.microtask(() => notifyListeners());
   }
 
-  // ✨ تحسين الكفاءة: حذف محلي وتجنب إعادة جلب الجميع
+  // 4. حذف مستخدم (Delete User) - حذف محلي
   Future<void> deleteUser(String id) async {
-    await _service.deleteUser(id);
+    _error = null;
+    try {
+      await _service.deleteUser(id);
     
-    // 🚀 تحسين: حذف العنصر محلياً بدلاً من fetchAll()
-    _items.removeWhere((user) => user['id'] == id);
+      // حذف العنصر محلياً
+      _items.removeWhere((user) => user['id'] == id);
+    } catch (e) {
+      _error = 'Failed to delete user $id: ${e.toString()}';
+    }
     
     Future.microtask(() => notifyListeners());
   }
